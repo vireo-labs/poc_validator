@@ -4,22 +4,22 @@
 
 ![PoC Validator](https://img.shields.io/badge/Status-V0%20Demo-brightgreen) ![Target](https://img.shields.io/badge/Target-OWASP%20Juice%20Shop-orange)
 
-## 🎯 What it Does
+##  What it Does
 
 PoC Validator takes security scanner alerts and **proves** which vulnerabilities are actually exploitable by:
 
-1. 📄 **Parsing** vulnerability reports
-2. 🔍 **Analyzing** code to verify the flaw exists
-3. ⚡ **Finding** or generating exploits
-4. 🐳 **Running** exploits in Docker sandboxes
-5. ⚖️ **Judging** results with LLM to deliver a verdict
+1.  **Parsing** vulnerability reports
+2.  **Analyzing** code to verify the flaw exists
+3.  **Finding** or generating exploits
+4.  **Running** exploits in Docker sandboxes
+5.  **Judging** results with LLM to deliver a verdict
 
 **Verdicts:**
-- ✅ **VALID** - Confirmed exploitable, prioritize patching
-- ❌ **INVALID** - Not exploitable, likely false positive
-- ⚠️ **NEEDS REVIEW** - Requires manual security review
+-  **VALID** - Confirmed exploitable, prioritize patching
+-  **INVALID** - Not exploitable, likely false positive
+-  **NEEDS REVIEW** - Requires manual security review
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -66,7 +66,7 @@ npm run dev -- -p 3001
 - Backend API: http://localhost:8000
 - Juice Shop: http://localhost:3000
 
-## 🧪 Try It Out
+##  Try It Out
 
 1. Go to http://localhost:3001/validate
 2. Click "SQLi" quick fill button
@@ -74,7 +74,7 @@ npm run dev -- -p 3001
 4. Watch the 5-agent pipeline process
 5. See the verdict!
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 poc_validator/
@@ -97,7 +97,7 @@ poc_validator/
 └── docker-compose.yml
 ```
 
-## 🔧 API Endpoints
+##  API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -105,7 +105,7 @@ poc_validator/
 | GET | `/api/validate/{id}` | Get validation status |
 | GET | `/api/validations` | List all validations |
 
-## 🛡️ Target: OWASP Juice Shop
+##  Target: OWASP Juice Shop
 
 This demo uses [OWASP Juice Shop](https://owasp.org/www-project-juice-shop/) as the target - a real, intentionally vulnerable web application with 100+ documented security flaws.
 
@@ -116,6 +116,3 @@ This demo uses [OWASP Juice Shop](https://owasp.org/www-project-juice-shop/) as 
 - IDOR (basket access)
 - Path Traversal (file read)
 
-## 📜 License
-
-MIT
