@@ -1,22 +1,49 @@
-# PoC Validator
+# PoC Validator v0.1.1
 
-**Automated Security Vulnerability Validation**
+**Automated Security Vulnerability Validation with LLM-Powered Exploit Generation**
 
-PoC Validator automatically validates security scanner alerts by attempting to exploit vulnerabilities in a safe sandbox environment. It separates actually exploitable vulnerabilities from false positives.
+PoC Validator automatically validates security scanner alerts by attempting to exploit vulnerabilities in a safe environment. It separates actually exploitable vulnerabilities from false positives.
 
-## What It Does
+## What's New in v0.1.1
 
-1. **Parse** vulnerability reports from Snyk, Semgrep, and other scanners
-2. **Analyze** code to verify the vulnerable code exists
-3. **Generate** exploits dynamically using LLM or cached PoC library
-4. **Execute** exploits in isolated sandboxes
-5. **Judge** results to deliver a verdict
+- **Larger LLM Model**: Now uses `qwen/qwen3-235b-a22b-2507` for better exploit generation
+- **Skeptical LLM Judge**: Verifies exploit evidence, doesn't blindly trust SUCCESS claims
+- **Langfuse Integration**: Full LLM observability and tracing
+- **Improved Prompts**: Stricter success criteria to reduce false positives
+- **5-Agent Architecture**: Proper pipeline using dedicated agents
+
+## How It Works
+
+```
+Snyk/Semgrep Output
+       ↓
+┌──────────────────┐
+│  Report Parser   │  Parse vulnerability data
+└────────┬─────────┘
+         ↓
+┌──────────────────┐
+│  Code Analyzer   │  Find vulnerable code in repo
+└────────┬─────────┘
+         ↓
+┌──────────────────┐
+│  PoC Discoverer  │  Get exploit (library or LLM)
+└────────┬─────────┘
+         ↓
+┌──────────────────┐
+│ Sandbox Executor │  Run exploit (Python/Node.js)
+└────────┬─────────┘
+         ↓
+┌──────────────────┐
+│    LLM Judge     │  Skeptically verify evidence
+└────────┬─────────┘
+         ↓
+    VERDICT
+```
 
 ### Verdicts
 
-- **EXPLOITABLE** - Proven exploitable with actual exploit execution
-- **CONFIRMED** - Vulnerable version detected, needs code path verification
-- **FALSE_POSITIVE** - Patched or not exploitable
+- **EXPLOITABLE** - Proven with actual exploit execution and evidence
+- **FALSE_POSITIVE** - Patched, not exploitable, or insufficient evidence
 - **NEEDS_REVIEW** - Inconclusive, requires manual review
 
 ## Quick Start
@@ -24,9 +51,9 @@ PoC Validator automatically validates security scanner alerts by attempting to e
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
-- Docker
-- OpenRouter API key (for LLM generation)
+- Node.js 18+ (for dependency exploits)
+- OpenRouter API key
+- Langfuse account (optional, for observability)
 
 ### Installation
 
@@ -34,6 +61,7 @@ PoC Validator automatically validates security scanner alerts by attempting to e
 # Clone the repository
 git clone https://github.com/vireo-labs/poc_validator.git
 cd poc_validator
+git checkout dynamic_v0.1.1
 
 # Backend setup
 cd backend
@@ -43,29 +71,33 @@ pip install -r requirements.txt
 
 # Set environment variables
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your API keys:
+#   OPENROUTER_API_KEY=sk-or-v1-xxx
+#   LANGFUSE_PUBLIC_KEY=pk-lf-xxx (optional)
+#   LANGFUSE_SECRET_KEY=sk-lf-xxx (optional)
+#   LANGFUSE_HOST=https://cloud.langfuse.com
 ```
 
-### Usage
+### Run Validation
 
 ```bash
-# Run Snyk scan on a target project
-cd scanner_data
-npx snyk test --json > snyk-output.json
-
-# Run validation
-cd ../backend
+cd backend
 source venv/bin/activate
-PYTHONPATH=. python services/integrated_validator.py <project_path> <snyk_output.json>
+
+# Run with Snyk output
+PYTHONPATH=. python services/pipeline.py <snyk_output.json> --project-path <path_to_project>
+
+# Example with Juice Shop
+PYTHONPATH=. python services/pipeline.py ../scanner_data/real-snyk-juice-shop.json --project-path ../scanner_data/juice-shop
 ```
 
 ### Example Output
 
 ```
 Validating 46 unique vulnerabilities (from 76 total)...
-  [1/46] [EXPLOIT] vm2@3.9.17: Sandbox escape confirmed
-  [2/46] [SAFE] lodash@4.17.21: Patched
-  [3/46] [EXPLOIT] jsonwebtoken@0.4.0: None algorithm allowed
+  [1/46] [EXPLOIT] vm2: Dependency exploit confirmed vulnerability with evidence
+  [2/46] [SAFE] lodash: Exploit explicitly reported failure
+  [3/46] [EXPLOIT] jsonwebtoken: Dependency exploit confirmed vulnerability with evidence
   ...
 
 ============================================================
@@ -76,57 +108,31 @@ Total Snyk alerts: 76
 Unique validated: 46
 
 By verdict:
-  [EXPLOIT] EXPLOITABLE: 23
-  [SAFE] FALSE_POSITIVE: 6
-  [REVIEW] NEEDS_REVIEW: 17
+  [EXPLOIT] EXPLOITABLE: 22
+  [SAFE] FALSE_POSITIVE: 24
+
+=== EXPLOITABLE (22) ===
+  [CRITICAL] vm2
+       Remote Code Execution (RCE)
+       Source: dependency_library
+       Confidence: 95%
 ```
 
 ## Architecture
 
-### Validation Flow
+### 5-Agent Pipeline
 
-```
-Scanner Output (Snyk/Semgrep)
-         |
-         v
-   Universal Parser
-         |
-         v
-   Quick Triage (FREE)
-   - Filter test files
-   - Deduplicate
-         |
-         v
-   Strategy Router
-   - 90%: Minimal reproduction (fast, cheap)
-   - 10%: Full deployment (slow, expensive)
-         |
-         v
-   Exploit Generator
-   - Check PoC Library (30% hit rate)
-   - LLM generates custom exploit (70%)
-         |
-         v
-   Sandbox Executor
-   - Run exploit in project context
-   - Capture output/proof
-         |
-         v
-   Verdict Classification
-```
+| Agent | File | Purpose |
+|-------|------|---------|
+| Report Parser | `agents/report_parser.py` | Parse scanner output |
+| Code Analyzer | `agents/code_analyzer.py` | Find vulnerable code |
+| PoC Discoverer | `agents/poc_discoverer.py` | Generate exploits |
+| Sandbox Executor | `agents/sandbox_executor.py` | Execute exploits |
+| LLM Judge | `agents/llm_judge.py` | Verify and deliver verdict |
 
-### Key Components
+### Exploit Library
 
-| Component | Purpose |
-|-----------|---------|
-| `snyk_parser.py` | Parse Snyk JSON output |
-| `integrated_validator.py` | Main validation pipeline |
-| `ExploitLibrary` | Cached exploits for known CVEs |
-| LLM Generator | Dynamic exploit creation via OpenRouter |
-
-## Exploit Library
-
-Currently supports 7 packages with tested exploits:
+Supports 10+ packages with tested exploits:
 
 | Package | Vulnerability Type |
 |---------|-------------------|
@@ -136,48 +142,90 @@ Currently supports 7 packages with tested exploits:
 | express-jwt | Auth bypass |
 | sanitize-html | XSS bypass |
 | moment | Path traversal |
-| cookie | XSS |
+| marsdb | Code injection |
+| braces | ReDoS |
 
-For packages not in the library, the system uses LLM to generate custom exploit code.
+For packages not in the library, the system uses LLM (Qwen 235B) to generate exploit code.
 
 ## Project Structure
 
 ```
 poc_validator/
 ├── backend/
+│   ├── agents/                      # 5 validation agents
+│   │   ├── report_parser.py
+│   │   ├── code_analyzer.py
+│   │   ├── poc_discoverer.py
+│   │   ├── sandbox_executor.py
+│   │   └── llm_judge.py
 │   ├── services/
-│   │   ├── parsers/
-│   │   │   └── snyk_parser.py      # Scanner output parser
-│   │   ├── integrated_validator.py  # Main validation pipeline
-│   │   └── openrouter.py           # LLM integration
-│   ├── agents/                      # Agent implementations
-│   └── exploits/                    # Exploit templates
-├── scanner_data/                    # Scanner outputs and test repos
-├── docs/
-│   ├── ARCHITECTURE.md             # System design
-│   └── FLOWCHART.md                # Mermaid diagrams
-└── frontend/                        # Web UI (Next.js)
+│   │   ├── pipeline.py              # Main orchestrator
+│   │   ├── openrouter.py            # LLM with Langfuse
+│   │   └── parsers/snyk_parser.py
+│   └── exploits/
+│       ├── juice_shop.py            # HTTP exploits
+│       └── dependencies.py          # NPM package exploits
+├── scanner_data/                    # Test data
+└── docs/                            # Documentation
 ```
 
-## API
+## Configuration
 
-### Validate Scanner Output
+### Environment Variables
 
+```bash
+# Required
+OPENROUTER_API_KEY=sk-or-v1-xxx
+
+# Optional - Langfuse Observability
+LANGFUSE_PUBLIC_KEY=pk-lf-xxx
+LANGFUSE_SECRET_KEY=sk-lf-xxx
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+### Model Selection
+
+Default model: `qwen/qwen3-235b-a22b-2507`
+
+To change, edit `backend/services/openrouter.py`:
 ```python
-from services.integrated_validator import IntegratedValidator
-
-validator = IntegratedValidator("/path/to/project")
-job = await validator.validate_batch("snyk-output.json")
-summary = validator.get_summary(job)
+self.default_model = "your-preferred-model"
 ```
 
 ## Cost Model
 
 | Scenario | Cost | Time |
 |----------|------|------|
-| Cached exploit | Free | <1s |
-| LLM-generated exploit | ~$0.01 | 5-10s |
-| Full validation (per vuln) | ~$0.05 | 10s |
+| Dependency exploit (cached) | Free | <1s |
+| LLM-generated exploit | ~$0.02 | 5-15s |
+| LLM verdict verification | ~$0.01 | 3-5s |
+| Full validation (per vuln) | ~$0.05 | 10-20s |
+
+## Langfuse Integration
+
+All LLM calls are traced in Langfuse with:
+- Model used
+- Token usage
+- Latency
+- Metadata (package, severity, vuln_type)
+
+View traces at: https://cloud.langfuse.com
+
+## API Usage
+
+```python
+import asyncio
+from services.pipeline import PipelineOrchestrator
+
+async def validate():
+    orchestrator = PipelineOrchestrator(
+        project_path="./my-project"
+    )
+    summary = await orchestrator.validate_batch("snyk-output.json")
+    print(summary)
+
+asyncio.run(validate())
+```
 
 ## License
 

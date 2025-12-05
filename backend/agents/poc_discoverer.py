@@ -10,29 +10,46 @@ from services.github_service import github_service
 from exploits.juice_shop import get_exploit_for_vuln_type, EXPLOIT_MAP
 
 
-SYSTEM_PROMPT = """You are a security exploit developer. Generate a Python exploit script for the given vulnerability based on the actual vulnerable code found.
+SYSTEM_PROMPT = """You are a security exploit developer. Generate a Python exploit script for the given vulnerability.
 
 The script MUST:
 1. Use httpx for HTTP requests
 2. TARGET_URL variable is pre-defined with the target URL
-3. Print "SUCCESS:" followed by evidence if exploit works
+3. Print "SUCCESS:" followed by CONCRETE EVIDENCE if exploit works
 4. Print "FAILED:" with reason if exploit fails
 5. Include a main exploit() function that returns True/False
 6. Exit with code 0 on success, 1 on failure
+
+CRITICAL - Only return SUCCESS if you have ACTUAL EVIDENCE of exploitation:
+- ReDoS: Response time > 5 seconds indicates vulnerability
+- XSS: Payload reflected UNESCAPED in response body
+- SQLi: Data returned that shouldn't be accessible, or error messages revealing DB
+- Auth Bypass: Access to protected resource without valid credentials
+- RCE: Command output visible in response
+- SSRF: Internal resource accessed or response from internal service
+
+DO NOT return SUCCESS just because:
+- Server responded with 200/400/404
+- Server didn't crash
+- Request was accepted
 
 Return ONLY the Python code, no markdown code blocks or explanations.
 
 Example structure:
 import httpx
+import time
 
 def exploit():
+    start = time.time()
     target = TARGET_URL + "/endpoint"
-    # exploit logic
     response = httpx.get(target)
-    if "expected" in response.text:
-        print("SUCCESS: Exploit worked - evidence here")
+    elapsed = time.time() - start
+    
+    # Check for ACTUAL evidence
+    if elapsed > 5:  # ReDoS evidence
+        print(f"SUCCESS: ReDoS confirmed - response took {elapsed:.2f}s")
         return True
-    print("FAILED: Reason")
+    print(f"FAILED: Response was fast ({elapsed:.2f}s), not vulnerable")
     return False
 
 if __name__ == "__main__":
@@ -48,8 +65,10 @@ class PoCDiscovererAgent:
         """
         Generate exploit based on vulnerability type and code analysis.
         
-        Uses tested exploits when available for reliability,
-        falls back to LLM generation for unknown types.
+        Priority:
+        1. Dependency exploits (for npm package vulnerabilities)
+        2. HTTP exploits (for runtime vulnerabilities like SQLi, XSS)
+        3. LLM-generated exploit (fallback)
         
         Args:
             vuln_data: Parsed vulnerability data
@@ -60,22 +79,41 @@ class PoCDiscovererAgent:
         """
         vuln_type = vuln_data.get("vulnerability_type", "")
         title = vuln_data.get("title", "")
+        package_name = vuln_data.get("package_name", "")
         
-        # First: Try to get a tested exploit for this vulnerability type
+        # First: Check for dependency exploits (npm packages)
+        if package_name:
+            from exploits.dependencies import get_dependency_exploit
+            dep_exploit = get_dependency_exploit(package_name)
+            if dep_exploit:
+                return {
+                    "success": True,
+                    "exploit_code": dep_exploit["code"],
+                    "exploit_name": f"Dependency Exploit: {package_name}",
+                    "source": "dependency_library",
+                    "exploit_type": dep_exploit["type"],
+                    "language": dep_exploit.get("language", "javascript"),
+                    "confidence": 0.95,
+                    "based_on_file": None
+                }
+        
+        # Second: Check for HTTP exploits (runtime vulnerabilities)
         tested_exploit = get_exploit_for_vuln_type(vuln_type)
         
         if tested_exploit:
-            exploit_name = f"Tested Exploit: {title[:50]}" if title else f"Tested {vuln_type} Exploit"
+            exploit_name = f"HTTP Exploit: {title[:50]}" if title else f"HTTP {vuln_type} Exploit"
             return {
                 "success": True,
                 "exploit_code": tested_exploit,
                 "exploit_name": exploit_name,
-                "source": "tested_exploit",
+                "source": "http_exploit_library",
+                "exploit_type": vuln_type,
+                "language": "python",
                 "confidence": 0.95,
                 "based_on_file": code_analysis.get("data", {}).get("file_path")
             }
         
-        # Second: Fall back to LLM-generated exploit
+        # Third: Fall back to LLM-generated exploit
         analysis_data = code_analysis.get("data", {})
         
         # Get additional code context if we have repo path
@@ -122,7 +160,13 @@ Generate a complete, working Python exploit that:
                 system_prompt=SYSTEM_PROMPT,
                 user_content=user_content,
                 temperature=0.3,
-                max_tokens=2500
+                max_tokens=2500,
+                trace_name="poc_discoverer",
+                metadata={
+                    "vuln_type": vuln_data.get('vulnerability_type'),
+                    "package": vuln_data.get('package_name'),
+                    "title": vuln_data.get('title', '')[:50]
+                }
             )
             
             # Clean up response

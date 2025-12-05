@@ -1,221 +1,671 @@
 {
-  "job_id": "12526393",
   "total_scanned": 76,
   "unique_validated": 46,
   "by_verdict": {
-    "exploitable": 23,
-    "false_positive": 6,
-    "needs_review": 17
+    "false_positive": 24,
+    "exploitable": 22
   },
-  "exploitable_count": 23,
+  "exploitable_count": 22,
   "exploitable": [
     {
-      "package": "braces",
-      "version": "2.3.2",
-      "title": "Excessive Platform Resource Consumption within a Loop",
-      "severity": "HIGH",
-      "reason": "LLM exploit: expected pattern to be less than 65536 characters",
-      "confidence": 0.75,
-      "exploit_executed": true
+      "package": "decompress-tar",
+      "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
+      "severity": "MEDIUM",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     },
     {
-      "package": "crypto-js",
-      "version": "3.3.0",
-      "title": "Use of Weak Hash",
+      "package": "engine.io",
+      "title": "Denial of Service (DoS)",
       "severity": "HIGH",
-      "reason": "LLM exploit:  Weak PBKDF2 configuration detected with SHA-1 and 1 iteration",
-      "confidence": 0.75,
-      "exploit_executed": true
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     },
     {
       "package": "express-jwt",
-      "version": "0.1.3",
       "title": "Authorization Bypass",
       "severity": "HIGH",
-      "reason": "Auth bypass in version 0.1.3",
       "confidence": 0.95,
-      "exploit_executed": true
-    },
-    {
-      "package": "hbs",
-      "version": "4.2.0",
-      "title": "Information Exposure",
-      "severity": "LOW",
-      "reason": "LLM exploit:  No vulnerability detected\nVULNERABLE",
-      "confidence": 0.75,
-      "exploit_executed": true
-    },
-    {
-      "package": "http-cache-semantics",
-      "version": "3.8.1",
-      "title": "Regular Expression Denial of Service (ReDoS)",
-      "severity": "MEDIUM",
-      "reason": "LLM exploit: DoS detected - took 2624.21ms",
-      "confidence": 0.75,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "full",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "ip",
-      "version": "2.0.1",
       "title": "Server-side Request Forgery (SSRF)",
       "severity": "HIGH",
-      "reason": "LLM exploit:  Octal localhost bypass works - ip.isPublic(\"017700000001\") returns true",
-      "confidence": 0.75,
-      "exploit_executed": true
-    },
-    {
-      "package": "ip",
-      "version": "2.0.1",
-      "title": "Server-Side Request Forgery (SSRF)",
-      "severity": "MEDIUM",
-      "reason": "LLM exploit:  Private IP addresses incorrectly identified as public",
-      "confidence": 0.75,
-      "exploit_executed": true
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     },
     {
       "package": "jsonwebtoken",
-      "version": "0.4.0",
       "title": "Improper Authentication",
       "severity": "MEDIUM",
-      "reason": "None algorithm allowed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "jsonwebtoken",
-      "version": "0.4.0",
       "title": "Improper Restriction of Security Token Assignment",
       "severity": "MEDIUM",
-      "reason": "None algorithm allowed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "jsonwebtoken",
-      "version": "0.4.0",
       "title": "Use of a Broken or Risky Cryptographic Algorithm",
       "severity": "MEDIUM",
-      "reason": "None algorithm allowed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "jsonwebtoken",
-      "version": "0.4.0",
       "title": "Authentication Bypass",
       "severity": "HIGH",
-      "reason": "None algorithm allowed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "full",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "libxmljs2",
+      "title": "Type Confusion",
+      "severity": "HIGH",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
+    },
+    {
+      "package": "marsdb",
+      "title": "Arbitrary Code Injection",
+      "severity": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "multer",
-      "version": "1.4.5-lts.2",
-      "title": "Uncaught Exception",
+      "title": "Missing Release of Memory after Effective Lifetime",
       "severity": "HIGH",
-      "reason": "LLM exploit:  500\nVULNERABLE",
-      "confidence": 0.75,
-      "exploit_executed": true
-    },
-    {
-      "package": "notevil",
-      "version": "1.3.3",
-      "title": "Sandbox Bypass",
-      "severity": "MEDIUM",
-      "reason": "LLM exploit:  Prototype pollution successful",
-      "confidence": 0.75,
-      "exploit_executed": true
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     },
     {
       "package": "sanitize-html",
-      "version": "1.4.2",
       "title": "Validation Bypass",
       "severity": "MEDIUM",
-      "reason": "XSS payload passed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "sanitize-html",
-      "version": "1.4.2",
       "title": "Access Restriction Bypass",
       "severity": "MEDIUM",
-      "reason": "XSS payload passed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "sanitize-html",
-      "version": "1.4.2",
       "title": "Regular Expression Denial of Service (ReDoS)",
       "severity": "MEDIUM",
-      "reason": "XSS payload passed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "sanitize-html",
-      "version": "1.4.2",
       "title": "Cross-site Scripting (XSS)",
       "severity": "MEDIUM",
-      "reason": "XSS payload passed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "sanitize-html",
-      "version": "1.4.2",
       "title": "Information Exposure",
       "severity": "MEDIUM",
-      "reason": "XSS payload passed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "socket.io",
-      "version": "3.1.2",
       "title": "Uncaught Exception",
       "severity": "HIGH",
-      "reason": "LLM exploit:  Unhandled error event caused crash\nnode",
-      "confidence": 0.75,
-      "exploit_executed": true
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     },
     {
-      "package": "tar",
-      "version": "7.5.2",
-      "title": "Uncontrolled Resource Consumption ('Resource Exhaustion')",
-      "severity": "MEDIUM",
-      "reason": "LLM exploit: ENAMETOOLONG",
-      "confidence": 0.75,
-      "exploit_executed": true
+      "package": "socket.io-parser",
+      "title": "Denial of Service (DoS)",
+      "severity": "HIGH",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     },
     {
       "package": "vm2",
-      "version": "3.9.17",
       "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
       "severity": "MEDIUM",
-      "reason": "Sandbox escape confirmed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "vm2",
-      "version": "3.9.17",
       "title": "Sandbox Bypass",
       "severity": "CRITICAL",
-      "reason": "Sandbox escape confirmed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
     },
     {
       "package": "vm2",
-      "version": "3.9.17",
       "title": "Remote Code Execution (RCE)",
       "severity": "CRITICAL",
-      "reason": "Sandbox escape confirmed",
       "confidence": 0.95,
-      "exploit_executed": true
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "base64url",
+      "title": "Uninitialized Memory Exposure",
+      "severity": "HIGH",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     }
   ],
-  "total_time_ms": 229845
+  "results": [
+    {
+      "vuln_id": "SNYK-JS-BRACES-6838727",
+      "package": "braces",
+      "title": "Excessive Platform Resource Consumption within a Loop",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The exploitation attempt was definitively blocked and failed. The output clearly shows 'BLOCKED:Pattern processed normally' which indicates that the system's security controls intercepted and prevented the exploit attempt before it could cause resource consumption. The exit code of 0 with only 75ms duration suggests a very quick rejection rather than a successful exploitation. There is no evidence of unauthorized access, data exfiltration, or actual code execution - all indicators of successful exploitation are absent.",
+      "time_ms": 4572
+    },
+    {
+      "vuln_id": "SNYK-JS-COOKIE-8163060",
+      "package": "cookie",
+      "title": "Cross-site Scripting (XSS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 1.0,
+      "reason": "The exploitation attempt was definitively blocked by a security mechanism. The output 'BLOCKED:Patched' clearly indicates that the XSS vulnerability was detected and prevented from executing. This is not a case of failed exploitation due to technical issues, but rather successful defense against the attack. The exit code 0 with a duration of 47ms suggests the system quickly recognized and blocked the malicious input without any execution.",
+      "time_ms": 3692
+    },
+    {
+      "vuln_id": "SNYK-JS-CRYPTOJS-6028119",
+      "package": "crypto-js",
+      "title": "Use of Weak Hash",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 8048
+    },
+    {
+      "vuln_id": "SNYK-JS-DECOMPRESSTAR-559095",
+      "package": "decompress-tar",
+      "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 4088
+    },
+    {
+      "vuln_id": "SNYK-JS-EIVINDFJELDSTADDOT-564434",
+      "package": "eivindfjeldstad-dot",
+      "title": "Prototype Pollution",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 6784
+    },
+    {
+      "vuln_id": "SNYK-JS-ENGINEIO-3136336",
+      "package": "engine.io",
+      "title": "Denial of Service (DoS)",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 12252
+    },
+    {
+      "vuln_id": "SNYK-JS-EXPRESSJWT-575022",
+      "package": "express-jwt",
+      "title": "Authorization Bypass",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 41
+    },
+    {
+      "vuln_id": "SNYK-JS-GOT-2932019",
+      "package": "got",
+      "title": "Open Redirect",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 3219
+    },
+    {
+      "vuln_id": "SNYK-JS-HBS-1566555",
+      "package": "hbs",
+      "title": "Information Exposure",
+      "severity": "LOW",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 3879
+    },
+    {
+      "vuln_id": "SNYK-JS-HTTPCACHESEMANTICS-3248783",
+      "package": "http-cache-semantics",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 3219
+    },
+    {
+      "vuln_id": "SNYK-JS-INFLIGHT-6095116",
+      "package": "inflight",
+      "title": "Missing Release of Resource after Effective Lifetime",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 10283
+    },
+    {
+      "vuln_id": "SNYK-JS-IP-12704893",
+      "package": "ip",
+      "title": "Server-side Request Forgery (SSRF)",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 3944
+    },
+    {
+      "vuln_id": "SNYK-JS-IP-7148531",
+      "package": "ip",
+      "title": "Server-Side Request Forgery (SSRF)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 7025
+    },
+    {
+      "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180022",
+      "package": "jsonwebtoken",
+      "title": "Improper Authentication",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 35
+    },
+    {
+      "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180024",
+      "package": "jsonwebtoken",
+      "title": "Improper Restriction of Security Token Assignment",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 29
+    },
+    {
+      "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180026",
+      "package": "jsonwebtoken",
+      "title": "Use of a Broken or Risky Cryptographic Algorithm",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 28
+    },
+    {
+      "vuln_id": "npm:jsonwebtoken:20150331",
+      "package": "jsonwebtoken",
+      "title": "Authentication Bypass",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 27
+    },
+    {
+      "vuln_id": "SNYK-JS-LIBXMLJS2-6808810",
+      "package": "libxmljs2",
+      "title": "Type Confusion",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 26621
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASH-1018905",
+      "package": "lodash",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The vulnerability was not successfully exploited. The exit code of 0 indicates normal termination, and the STDOUT message 'BLOCKED:Patched version' clearly shows that the system detected and blocked the exploit attempt. This indicates that the ReDoS vulnerability has been patched or mitigated, preventing the denial of service attack from succeeding. The short execution duration of 39ms also suggests the system responded quickly and effectively, rather than being consumed by the regex processing.",
+      "time_ms": 6683
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASH-1040724",
+      "package": "lodash",
+      "title": "Code Injection",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The exploitation attempt was definitively blocked and failed. The STDOUT output clearly shows 'BLOCKED:Patched version' which indicates that the system detected and prevented the exploit attempt before it could succeed. This is a clear indication of successful defense mechanisms preventing code injection. The exit code of 0 with no stderr output suggests the process completed normally but was terminated by security controls rather than completing the exploit. There is no evidence of actual code execution, unauthorized access, or successful exploitation.",
+      "time_ms": 7778
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASH-450202",
+      "package": "lodash",
+      "title": "Prototype Pollution",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The exploitation attempt was definitively blocked by a patch, as indicated by the 'BLOCKED:Patched version' message in STDOUT. This clearly shows that the vulnerability was not successfully exploited because the system detected and prevented the exploit attempt. The exit code of 0 indicates successful execution of the exploit script itself, but the content of the output reveals that the exploit was blocked before it could cause any actual damage or compromise.",
+      "time_ms": 4229
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASHSET-1320032",
+      "package": "lodash.set",
+      "title": "Prototype Pollution",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 13984
+    },
+    {
+      "vuln_id": "SNYK-JS-MARSDB-480405",
+      "package": "marsdb",
+      "title": "Arbitrary Code Injection",
+      "severity": "CRITICAL",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 31
+    },
+    {
+      "vuln_id": "SNYK-JS-MESSAGEFORMAT-13109646",
+      "package": "messageformat",
+      "title": "Prototype Pollution",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 4706
+    },
+    {
+      "vuln_id": "SNYK-JS-MICROMATCH-6838728",
+      "package": "micromatch",
+      "title": "Inefficient Regular Expression Complexity",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 4653
+    },
+    {
+      "vuln_id": "SNYK-JS-MOMENT-2440688",
+      "package": "moment",
+      "title": "Directory Traversal",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 1.0,
+      "reason": "The exploitation attempt was definitively blocked by a patch or security mechanism. The output 'BLOCKED:Patched version' clearly indicates that the system detected and prevented the directory traversal attempt before any exploitation could occur. This is not a case of failed exploitation due to technical issues, but rather successful defense against the attack. The exit code of 0 with no stderr output confirms the process completed normally, but the blocking message indicates the exploit was stopped at the security layer.",
+      "time_ms": 2230
+    },
+    {
+      "vuln_id": "npm:moment:20160126",
+      "package": "moment",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The vulnerability was not successfully exploited. The output 'BLOCKED:Patched version' indicates that the system detected and blocked the exploit attempt before it could cause damage. The exit code of 0 suggests normal termination, but more importantly, the explicit blocking message shows defensive measures were in place. The ReDoS vulnerability was likely detected by a security mechanism (such as a WAF or IDS) that prevented the malicious regular expression from executing, thus preventing the denial of service attack. The 41ms duration is also suspiciously fast for a ReDoS attack, which typically takes much longer to consume system resources.",
+      "time_ms": 7727
+    },
+    {
+      "vuln_id": "SNYK-JS-MULTER-10185673",
+      "package": "multer",
+      "title": "Uncaught Exception",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 3756
+    },
+    {
+      "vuln_id": "SNYK-JS-MULTER-10185675",
+      "package": "multer",
+      "title": "Missing Release of Memory after Effective Lifetime",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 14309
+    },
+    {
+      "vuln_id": "SNYK-JS-NOTEVIL-2385946",
+      "package": "notevil",
+      "title": "Sandbox Bypass",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The exploitation attempt failed definitively. The exit code of 0 indicates the process completed, but the STDOUT shows a clear JavaScript runtime error: 'Cannot read properties of undefined (reading 'constructor')'. This error suggests the exploit code attempted to access a property on an undefined object, which is a common scripting error rather than evidence of successful sandbox bypass. The error occurs during exploit execution, indicating the payload failed to execute properly. There's no evidence of unauthorized access, data exfiltration, or successful code execution - only a failed script execution with a runtime error.",
+      "time_ms": 2443
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-1070780",
+      "package": "sanitize-html",
+      "title": "Validation Bypass",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 62
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-1070786",
+      "package": "sanitize-html",
+      "title": "Access Restriction Bypass",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 44
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-2957526",
+      "package": "sanitize-html",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 53
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-585892",
+      "package": "sanitize-html",
+      "title": "Cross-site Scripting (XSS)",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 39
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-6256334",
+      "package": "sanitize-html",
+      "title": "Information Exposure",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 37
+    },
+    {
+      "vuln_id": "SNYK-JS-SOCKETIO-7278048",
+      "package": "socket.io",
+      "title": "Uncaught Exception",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 7139
+    },
+    {
+      "vuln_id": "SNYK-JS-SOCKETIOPARSER-5596892",
+      "package": "socket.io-parser",
+      "title": "Denial of Service (DoS)",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 26573
+    },
+    {
+      "vuln_id": "SNYK-JS-TAR-6476909",
+      "package": "tar",
+      "title": "Uncontrolled Resource Consumption ('Resource Exhaustion')",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The exploit attempt failed definitively. The exit code of 1 indicates a failure, and the error output shows a Python syntax error on line 11 of the exploit code. The malformed tar content appears to be an attempt at creating a malicious tar file for resource exhaustion, but the Python code itself is malformed or incomplete, preventing execution. The error occurs during parsing/compilation of the Python code rather than during execution of the resource exhaustion logic, indicating the exploit never reached its intended vulnerability exploitation phase.",
+      "time_ms": 19841
+    },
+    {
+      "vuln_id": "SNYK-JS-UNSETVALUE-2400660",
+      "package": "unset-value",
+      "title": "Prototype Pollution",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 21243
+    },
+    {
+      "vuln_id": "SNYK-JS-VM2-5537079",
+      "package": "vm2",
+      "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 48
+    },
+    {
+      "vuln_id": "SNYK-JS-VM2-5537100",
+      "package": "vm2",
+      "title": "Sandbox Bypass",
+      "severity": "CRITICAL",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 41
+    },
+    {
+      "vuln_id": "SNYK-JS-VM2-5772823",
+      "package": "vm2",
+      "title": "Remote Code Execution (RCE)",
+      "severity": "CRITICAL",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 42
+    },
+    {
+      "vuln_id": "SNYK-JS-WEB3-174533",
+      "package": "web3",
+      "title": "Insecure Credential Storage",
+      "severity": "LOW",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 6332
+    },
+    {
+      "vuln_id": "SNYK-JS-WS-7266574",
+      "package": "ws",
+      "title": "Denial of Service (DoS)",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 12912
+    },
+    {
+      "vuln_id": "npm:base64url:20180511",
+      "package": "base64url",
+      "title": "Uninitialized Memory Exposure",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit executed successfully with clear success indicators",
+      "time_ms": 3428
+    },
+    {
+      "vuln_id": "npm:jws:20160726",
+      "package": "jws",
+      "title": "Forgeable Public/Private Tokens",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.85,
+      "reason": "Exploit failed with clear failure indicators",
+      "time_ms": 20838
+    }
+  ]
 }
