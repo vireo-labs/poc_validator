@@ -1,0 +1,221 @@
+{
+  "job_id": "12526393",
+  "total_scanned": 76,
+  "unique_validated": 46,
+  "by_verdict": {
+    "exploitable": 23,
+    "false_positive": 6,
+    "needs_review": 17
+  },
+  "exploitable_count": 23,
+  "exploitable": [
+    {
+      "package": "braces",
+      "version": "2.3.2",
+      "title": "Excessive Platform Resource Consumption within a Loop",
+      "severity": "HIGH",
+      "reason": "LLM exploit: expected pattern to be less than 65536 characters",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "crypto-js",
+      "version": "3.3.0",
+      "title": "Use of Weak Hash",
+      "severity": "HIGH",
+      "reason": "LLM exploit:  Weak PBKDF2 configuration detected with SHA-1 and 1 iteration",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "express-jwt",
+      "version": "0.1.3",
+      "title": "Authorization Bypass",
+      "severity": "HIGH",
+      "reason": "Auth bypass in version 0.1.3",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "hbs",
+      "version": "4.2.0",
+      "title": "Information Exposure",
+      "severity": "LOW",
+      "reason": "LLM exploit:  No vulnerability detected\nVULNERABLE",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "http-cache-semantics",
+      "version": "3.8.1",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "reason": "LLM exploit: DoS detected - took 2624.21ms",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "ip",
+      "version": "2.0.1",
+      "title": "Server-side Request Forgery (SSRF)",
+      "severity": "HIGH",
+      "reason": "LLM exploit:  Octal localhost bypass works - ip.isPublic(\"017700000001\") returns true",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "ip",
+      "version": "2.0.1",
+      "title": "Server-Side Request Forgery (SSRF)",
+      "severity": "MEDIUM",
+      "reason": "LLM exploit:  Private IP addresses incorrectly identified as public",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "jsonwebtoken",
+      "version": "0.4.0",
+      "title": "Improper Authentication",
+      "severity": "MEDIUM",
+      "reason": "None algorithm allowed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "jsonwebtoken",
+      "version": "0.4.0",
+      "title": "Improper Restriction of Security Token Assignment",
+      "severity": "MEDIUM",
+      "reason": "None algorithm allowed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "jsonwebtoken",
+      "version": "0.4.0",
+      "title": "Use of a Broken or Risky Cryptographic Algorithm",
+      "severity": "MEDIUM",
+      "reason": "None algorithm allowed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "jsonwebtoken",
+      "version": "0.4.0",
+      "title": "Authentication Bypass",
+      "severity": "HIGH",
+      "reason": "None algorithm allowed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "multer",
+      "version": "1.4.5-lts.2",
+      "title": "Uncaught Exception",
+      "severity": "HIGH",
+      "reason": "LLM exploit:  500\nVULNERABLE",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "notevil",
+      "version": "1.3.3",
+      "title": "Sandbox Bypass",
+      "severity": "MEDIUM",
+      "reason": "LLM exploit:  Prototype pollution successful",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "sanitize-html",
+      "version": "1.4.2",
+      "title": "Validation Bypass",
+      "severity": "MEDIUM",
+      "reason": "XSS payload passed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "sanitize-html",
+      "version": "1.4.2",
+      "title": "Access Restriction Bypass",
+      "severity": "MEDIUM",
+      "reason": "XSS payload passed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "sanitize-html",
+      "version": "1.4.2",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "reason": "XSS payload passed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "sanitize-html",
+      "version": "1.4.2",
+      "title": "Cross-site Scripting (XSS)",
+      "severity": "MEDIUM",
+      "reason": "XSS payload passed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "sanitize-html",
+      "version": "1.4.2",
+      "title": "Information Exposure",
+      "severity": "MEDIUM",
+      "reason": "XSS payload passed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "socket.io",
+      "version": "3.1.2",
+      "title": "Uncaught Exception",
+      "severity": "HIGH",
+      "reason": "LLM exploit:  Unhandled error event caused crash\nnode",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "tar",
+      "version": "7.5.2",
+      "title": "Uncontrolled Resource Consumption ('Resource Exhaustion')",
+      "severity": "MEDIUM",
+      "reason": "LLM exploit: ENAMETOOLONG",
+      "confidence": 0.75,
+      "exploit_executed": true
+    },
+    {
+      "package": "vm2",
+      "version": "3.9.17",
+      "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
+      "severity": "MEDIUM",
+      "reason": "Sandbox escape confirmed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "vm2",
+      "version": "3.9.17",
+      "title": "Sandbox Bypass",
+      "severity": "CRITICAL",
+      "reason": "Sandbox escape confirmed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    },
+    {
+      "package": "vm2",
+      "version": "3.9.17",
+      "title": "Remote Code Execution (RCE)",
+      "severity": "CRITICAL",
+      "reason": "Sandbox escape confirmed",
+      "confidence": 0.95,
+      "exploit_executed": true
+    }
+  ],
+  "total_time_ms": 229845
+}

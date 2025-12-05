@@ -5,9 +5,10 @@ import enum
 
 
 class VerdictType(str, enum.Enum):
-    VALID = "VALID"
-    INVALID = "INVALID"
-    NEEDS_REVIEW = "NEEDS_REVIEW"
+    VALID = "VALID"                    # Exploit executed successfully
+    INVALID = "INVALID"                # Exploit failed - vuln doesn't exist
+    CODE_VERIFIED = "CODE_VERIFIED"    # Code pattern confirmed (no execution needed)
+    NEEDS_REVIEW = "NEEDS_REVIEW"      # Inconclusive - manual review needed
     PENDING = "PENDING"
 
 

@@ -1,121 +1,184 @@
-# PoC Validator V0 Demo
+# PoC Validator
 
-> Automatically validate security vulnerabilities by running exploits in isolated sandboxes.
+**Automated Security Vulnerability Validation**
 
-![PoC Validator](https://img.shields.io/badge/Status-V0%20Demo-brightgreen) ![Target](https://img.shields.io/badge/Target-OWASP%20Juice%20Shop-orange)
+PoC Validator automatically validates security scanner alerts by attempting to exploit vulnerabilities in a safe sandbox environment. It separates actually exploitable vulnerabilities from false positives.
 
-## 🎯 What it Does
+## What It Does
 
-PoC Validator takes security scanner alerts and **proves** which vulnerabilities are actually exploitable by:
+1. **Parse** vulnerability reports from Snyk, Semgrep, and other scanners
+2. **Analyze** code to verify the vulnerable code exists
+3. **Generate** exploits dynamically using LLM or cached PoC library
+4. **Execute** exploits in isolated sandboxes
+5. **Judge** results to deliver a verdict
 
-1. 📄 **Parsing** vulnerability reports
-2. 🔍 **Analyzing** code to verify the flaw exists
-3. ⚡ **Finding** or generating exploits
-4. 🐳 **Running** exploits in Docker sandboxes
-5. ⚖️ **Judging** results with LLM to deliver a verdict
+### Verdicts
 
-**Verdicts:**
-- ✅ **VALID** - Confirmed exploitable, prioritize patching
-- ❌ **INVALID** - Not exploitable, likely false positive
-- ⚠️ **NEEDS REVIEW** - Requires manual security review
+- **EXPLOITABLE** - Proven exploitable with actual exploit execution
+- **CONFIRMED** - Vulnerable version detected, needs code path verification
+- **FALSE_POSITIVE** - Patched or not exploitable
+- **NEEDS_REVIEW** - Inconclusive, requires manual review
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- Node.js 20+
-- Docker
 
-### 1. Clone and Setup
+- Python 3.11+
+- Node.js 18+
+- Docker
+- OpenRouter API key (for LLM generation)
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/vireo-labs/poc_validator.git
 cd poc_validator
 
-# Backend
+# Backend setup
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 
-# Create .env with your OpenRouter API key
-echo "OPENROUTER_API_KEY=your-key-here" > .env
-
-# Frontend
-cd ../frontend
-npm install
+# Set environment variables
+cp .env.example .env
+# Edit .env with your API keys
 ```
 
-### 2. Start Services
+### Usage
 
 ```bash
-# Terminal 1: Start Juice Shop target
-docker run -d -p 3000:3000 bkimminich/juice-shop
+# Run Snyk scan on a target project
+cd scanner_data
+npx snyk test --json > snyk-output.json
 
-# Terminal 2: Start backend
-cd backend
+# Run validation
+cd ../backend
 source venv/bin/activate
-uvicorn main:app --reload --port 8000
-
-# Terminal 3: Start frontend
-cd frontend
-npm run dev -- -p 3001
+PYTHONPATH=. python services/integrated_validator.py <project_path> <snyk_output.json>
 ```
 
-### 3. Open App
-- Frontend: http://localhost:3001
-- Backend API: http://localhost:8000
-- Juice Shop: http://localhost:3000
+### Example Output
 
-## 🧪 Try It Out
+```
+Validating 46 unique vulnerabilities (from 76 total)...
+  [1/46] [EXPLOIT] vm2@3.9.17: Sandbox escape confirmed
+  [2/46] [SAFE] lodash@4.17.21: Patched
+  [3/46] [EXPLOIT] jsonwebtoken@0.4.0: None algorithm allowed
+  ...
 
-1. Go to http://localhost:3001/validate
-2. Click "SQLi" quick fill button
-3. Click "Start Validation"
-4. Watch the 5-agent pipeline process
-5. See the verdict!
+============================================================
+VALIDATION COMPLETE
+============================================================
 
-## 📁 Project Structure
+Total Snyk alerts: 76
+Unique validated: 46
+
+By verdict:
+  [EXPLOIT] EXPLOITABLE: 23
+  [SAFE] FALSE_POSITIVE: 6
+  [REVIEW] NEEDS_REVIEW: 17
+```
+
+## Architecture
+
+### Validation Flow
+
+```
+Scanner Output (Snyk/Semgrep)
+         |
+         v
+   Universal Parser
+         |
+         v
+   Quick Triage (FREE)
+   - Filter test files
+   - Deduplicate
+         |
+         v
+   Strategy Router
+   - 90%: Minimal reproduction (fast, cheap)
+   - 10%: Full deployment (slow, expensive)
+         |
+         v
+   Exploit Generator
+   - Check PoC Library (30% hit rate)
+   - LLM generates custom exploit (70%)
+         |
+         v
+   Sandbox Executor
+   - Run exploit in project context
+   - Capture output/proof
+         |
+         v
+   Verdict Classification
+```
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `snyk_parser.py` | Parse Snyk JSON output |
+| `integrated_validator.py` | Main validation pipeline |
+| `ExploitLibrary` | Cached exploits for known CVEs |
+| LLM Generator | Dynamic exploit creation via OpenRouter |
+
+## Exploit Library
+
+Currently supports 7 packages with tested exploits:
+
+| Package | Vulnerability Type |
+|---------|-------------------|
+| vm2 | RCE (sandbox escape) |
+| lodash | Prototype pollution |
+| jsonwebtoken | None algorithm attack |
+| express-jwt | Auth bypass |
+| sanitize-html | XSS bypass |
+| moment | Path traversal |
+| cookie | XSS |
+
+For packages not in the library, the system uses LLM to generate custom exploit code.
+
+## Project Structure
 
 ```
 poc_validator/
 ├── backend/
-│   ├── main.py              # FastAPI app
-│   ├── agents/              # 5-agent system
-│   │   ├── report_parser.py
-│   │   ├── code_analyzer.py
-│   │   ├── poc_discoverer.py
-│   │   ├── sandbox_executor.py
-│   │   └── llm_judge.py
-│   └── services/
-│       ├── openrouter.py    # LLM API
-│       └── docker_sandbox.py
-├── frontend/
-│   └── app/
-│       ├── page.tsx         # Landing
-│       ├── validate/        # Submit form
-│       └── results/         # Dashboard
-└── docker-compose.yml
+│   ├── services/
+│   │   ├── parsers/
+│   │   │   └── snyk_parser.py      # Scanner output parser
+│   │   ├── integrated_validator.py  # Main validation pipeline
+│   │   └── openrouter.py           # LLM integration
+│   ├── agents/                      # Agent implementations
+│   └── exploits/                    # Exploit templates
+├── scanner_data/                    # Scanner outputs and test repos
+├── docs/
+│   ├── ARCHITECTURE.md             # System design
+│   └── FLOWCHART.md                # Mermaid diagrams
+└── frontend/                        # Web UI (Next.js)
 ```
 
-## 🔧 API Endpoints
+## API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/validate` | Submit vulnerability |
-| GET | `/api/validate/{id}` | Get validation status |
-| GET | `/api/validations` | List all validations |
+### Validate Scanner Output
 
-## 🛡️ Target: OWASP Juice Shop
+```python
+from services.integrated_validator import IntegratedValidator
 
-This demo uses [OWASP Juice Shop](https://owasp.org/www-project-juice-shop/) as the target - a real, intentionally vulnerable web application with 100+ documented security flaws.
+validator = IntegratedValidator("/path/to/project")
+job = await validator.validate_batch("snyk-output.json")
+summary = validator.get_summary(job)
+```
 
-**Pre-built exploits included:**
-- SQL Injection (login bypass)
-- Reflected XSS (search)
-- JWT Algorithm Confusion (auth bypass)
-- IDOR (basket access)
-- Path Traversal (file read)
+## Cost Model
 
-## 📜 License
+| Scenario | Cost | Time |
+|----------|------|------|
+| Cached exploit | Free | <1s |
+| LLM-generated exploit | ~$0.01 | 5-10s |
+| Full validation (per vuln) | ~$0.05 | 10s |
 
-MIT
+## License
+
+Proprietary - Vireo Labs

@@ -103,6 +103,40 @@ async def run_validation_pipeline(validation_id: int, report_content: str, sourc
         
         validations[validation_id]["code_analysis"] = analysis["data"]
         
+        # Check classification to determine if we can auto-exploit
+        classification = analysis.get("classification", {})
+        can_auto_exploit = classification.get("can_auto_exploit", True)
+        
+        # If this is a code-pattern-only vulnerability, skip execution
+        if not can_auto_exploit:
+            # CODE_VERIFIED verdict - pattern confirmed in source
+            if analysis["data"].get("vulnerable_code_exists"):
+                update_status(
+                    ValidationStatus.COMPLETED,
+                    verdict=VerdictType.CODE_VERIFIED.value,
+                    judge_reasoning=f"Vulnerability pattern confirmed in source code. {analysis['data'].get('explanation', '')} This vulnerability type requires manual exploitation (e.g., compile with ASAN, setup rogue server).",
+                    exploit_name="Code Pattern Verification",
+                    execution_output={
+                        "stdout": f"Pattern matches found: {len(analysis['data'].get('matches', []))}",
+                        "stderr": "",
+                        "exit_code": 0,
+                        "duration_ms": 0,
+                        "exploit_succeeded": None,
+                        "verification_mode": "pattern_only"
+                    },
+                    completed_at=datetime.now().isoformat()
+                )
+            else:
+                update_status(
+                    ValidationStatus.COMPLETED,
+                    verdict=VerdictType.NEEDS_REVIEW.value,
+                    judge_reasoning="Could not confirm vulnerability pattern in source code. Manual review recommended.",
+                    completed_at=datetime.now().isoformat()
+                )
+            return
+        
+        # Continue with exploit generation and execution for HTTP-exploitable vulns
+        
         # Agent 3: Discover PoC
         update_status(ValidationStatus.DISCOVERING)
         poc = await poc_discoverer.discover(parsed["data"], analysis)
