@@ -2,18 +2,27 @@
   "total_scanned": 76,
   "unique_validated": 46,
   "by_verdict": {
-    "false_positive": 30,
-    "needs_review": 6,
-    "exploitable": 10
+    "false_positive": 33,
+    "exploitable": 12,
+    "needs_review": 1
   },
-  "exploitable_count": 10,
+  "exploitable_count": 12,
   "exploitable": [
+    {
+      "package": "crypto-js",
+      "title": "Use of Weak Hash",
+      "severity": "HIGH",
+      "confidence": 0.95,
+      "reason": "The output provides concrete evidence that the weak hash configuration (PBKDF2 with SHA1 and only 1 iteration) enabled the rapid recovery of a password ('123') in 0.0002 seconds. This demonstrates actual exploitation of the weak hashing mechanism, as strong hashing would have made brute-force recovery infeasible at this speed. The recovered password is sensitive data, and its recovery proves the vulnerability was successfully exploited.",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
+    },
     {
       "package": "express-jwt",
       "title": "Authorization Bypass",
       "severity": "HIGH",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "full",
       "exploit_source": "dependency_library"
     },
@@ -22,7 +31,7 @@
       "title": "Improper Authentication",
       "severity": "MEDIUM",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
     },
@@ -31,7 +40,7 @@
       "title": "Improper Restriction of Security Token Assignment",
       "severity": "MEDIUM",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
     },
@@ -40,7 +49,7 @@
       "title": "Use of a Broken or Risky Cryptographic Algorithm",
       "severity": "MEDIUM",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
     },
@@ -49,7 +58,7 @@
       "title": "Authentication Bypass",
       "severity": "HIGH",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "full",
       "exploit_source": "dependency_library"
     },
@@ -58,7 +67,7 @@
       "title": "Arbitrary Code Injection",
       "severity": "CRITICAL",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
     },
@@ -67,7 +76,7 @@
       "title": "Sandbox Bypass",
       "severity": "MEDIUM",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
     },
@@ -76,7 +85,7 @@
       "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
       "severity": "MEDIUM",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
     },
@@ -85,7 +94,7 @@
       "title": "Sandbox Bypass",
       "severity": "CRITICAL",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
     },
@@ -94,9 +103,18 @@
       "title": "Remote Code Execution (RCE)",
       "severity": "CRITICAL",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
       "strategy": "minimal",
       "exploit_source": "dependency_library"
+    },
+    {
+      "package": "jws",
+      "title": "Forgeable Public/Private Tokens",
+      "severity": "HIGH",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "llm_generated"
     }
   ],
   "results": [
@@ -108,7 +126,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 722
+      "time_ms": 950
     },
     {
       "vuln_id": "SNYK-JS-COOKIE-8163060",
@@ -118,17 +136,17 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 143
+      "time_ms": 173
     },
     {
       "vuln_id": "SNYK-JS-CRYPTOJS-6028119",
       "package": "crypto-js",
       "title": "Use of Weak Hash",
       "severity": "HIGH",
-      "verdict": "false_positive",
-      "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 22535
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "The output provides concrete evidence that the weak hash configuration (PBKDF2 with SHA1 and only 1 iteration) enabled the rapid recovery of a password ('123') in 0.0002 seconds. This demonstrates actual exploitation of the weak hashing mechanism, as strong hashing would have made brute-force recovery infeasible at this speed. The recovered password is sensitive data, and its recovery proves the vulnerability was successfully exploited.",
+      "time_ms": 44772
     },
     {
       "vuln_id": "SNYK-JS-DECOMPRESSTAR-559095",
@@ -136,9 +154,9 @@
       "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
       "severity": "MEDIUM",
       "verdict": "false_positive",
-      "confidence": 0.95,
-      "reason": "The exploit attempt clearly failed due to an AttributeError: 'ByteStream' object has no attribute 'read'. This indicates a programming error in the exploit code where it tried to call .read() on an object that does not support it. The traceback shows the exploit did not proceed beyond the malicious tar creation phase, meaning no actual file write or extraction occurred. There is no evidence of successful arbitrary file write, no indication of a file being written to an unintended location, and no signs of exploitation such as delayed response times, leaked data, or command output.",
-      "time_ms": 40722
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 24983
     },
     {
       "vuln_id": "SNYK-JS-EIVINDFJELDSTADDOT-564434",
@@ -147,18 +165,18 @@
       "severity": "MEDIUM",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 29740
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 39448
     },
     {
       "vuln_id": "SNYK-JS-ENGINEIO-3136336",
       "package": "engine.io",
       "title": "Denial of Service (DoS)",
       "severity": "HIGH",
-      "verdict": "needs_review",
-      "confidence": 0.6,
-      "reason": "The exploit claims success by stating 'Server did not respond after exploit - likely crashed (DoS achieved)', which suggests a potential denial of service. However, there is no concrete evidence provided in the output to confirm that the server actually crashed or became unresponsive due to the exploit. For example, there is no HTTP status code, connection timeout error, or response time exceeding normal thresholds. The 5502ms duration is notable but not definitive proof of a DoS, as it could represent network latency or processing time rather than service unavailability. Without verification such as failed follow-up requests or monitoring data showing service downtime, the claim remains unverified.",
-      "time_ms": 36836
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 12740
     },
     {
       "vuln_id": "SNYK-JS-EXPRESSJWT-575022",
@@ -167,8 +185,8 @@
       "severity": "HIGH",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 183
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 165
     },
     {
       "vuln_id": "SNYK-JS-GOT-2932019",
@@ -177,8 +195,8 @@
       "severity": "MEDIUM",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 7390
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 9627
     },
     {
       "vuln_id": "SNYK-JS-HBS-1566555",
@@ -187,8 +205,8 @@
       "severity": "LOW",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 23235
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 12434
     },
     {
       "vuln_id": "SNYK-JS-HTTPCACHESEMANTICS-3248783",
@@ -197,8 +215,8 @@
       "severity": "MEDIUM",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 25839
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 24871
     },
     {
       "vuln_id": "SNYK-JS-INFLIGHT-6095116",
@@ -206,29 +224,29 @@
       "title": "Missing Release of Resource after Effective Lifetime",
       "severity": "MEDIUM",
       "verdict": "false_positive",
-      "confidence": 0.95,
-      "reason": "There is no concrete evidence of exploitation in the output. The exit code of -1 indicates the process likely timed out or failed, and the execution duration of over 30 seconds may suggest a hang or delay, but this alone does not confirm successful exploitation of a 'Missing Release of Resource after Effective Lifetime' vulnerability. The STDOUT is empty, and the STDERR only contains standard pip warnings and notices about updates, which are unrelated to resource exhaustion or exploitation impact. No leaked data, authentication bypass, or observable resource exhaustion effects (such as delayed responses or service unavailability) are demonstrated in the output.",
-      "time_ms": 75958
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 18282
     },
     {
       "vuln_id": "SNYK-JS-IP-12704893",
       "package": "ip",
       "title": "Server-side Request Forgery (SSRF)",
       "severity": "HIGH",
-      "verdict": "false_positive",
-      "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 24691
+      "verdict": "needs_review",
+      "confidence": 0.6,
+      "reason": "Exploit script encountered error: SyntaxError:. Cannot determine if target is vulnerable.",
+      "time_ms": 45256
     },
     {
       "vuln_id": "SNYK-JS-IP-7148531",
       "package": "ip",
       "title": "Server-Side Request Forgery (SSRF)",
       "severity": "MEDIUM",
-      "verdict": "needs_review",
-      "confidence": 0.6,
-      "reason": "The output claims 'SSRF successful' and mentions accessing the localhost main page via an obfuscated IP (::ffff:127.0.0.1), but there is no actual evidence of data leakage, response content, or interaction with a service behind localhost. A genuine SSRF exploit should demonstrate either retrieved internal content (e.g., HTML from localhost), a timing delay, or interaction with a listener. The message appears to be a script-generated assertion rather than proof of impact. Without seeing the actual response body, status code, or network interaction, we cannot confirm exploitation occurred.",
-      "time_ms": 66147
+      "verdict": "false_positive",
+      "confidence": 0.95,
+      "reason": "The output contains only a generic 'SUCCESS' message without any concrete evidence of exploitation. There is no proof of data leakage, unauthorized access, or interaction with an internal service. The message 'accessed internal root page via malformed IP address' is a claim, not verifiable evidence. No HTTP response content, status code, or leaked data is provided. STDERR contains only pip warnings and version notices, which are irrelevant to exploitation. The exploit script exited cleanly (exit code 0), but success in execution does not imply success in exploitation.",
+      "time_ms": 63461
     },
     {
       "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180022",
@@ -237,8 +255,8 @@
       "severity": "MEDIUM",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 162
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 194
     },
     {
       "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180024",
@@ -247,8 +265,8 @@
       "severity": "MEDIUM",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 185
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 178
     },
     {
       "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180026",
@@ -257,8 +275,8 @@
       "severity": "MEDIUM",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 170
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 134
     },
     {
       "vuln_id": "npm:jsonwebtoken:20150331",
@@ -267,8 +285,8 @@
       "severity": "HIGH",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 120
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 145
     },
     {
       "vuln_id": "SNYK-JS-LIBXMLJS2-6808810",
@@ -277,8 +295,8 @@
       "severity": "HIGH",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 23806
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 19387
     },
     {
       "vuln_id": "SNYK-JS-LODASH-1018905",
@@ -288,7 +306,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 142
+      "time_ms": 162
     },
     {
       "vuln_id": "SNYK-JS-LODASH-1040724",
@@ -298,7 +316,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 139
+      "time_ms": 137
     },
     {
       "vuln_id": "SNYK-JS-LODASH-450202",
@@ -308,7 +326,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 142
+      "time_ms": 155
     },
     {
       "vuln_id": "SNYK-JS-LODASHSET-1320032",
@@ -317,8 +335,8 @@
       "severity": "HIGH",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 17124
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 10777
     },
     {
       "vuln_id": "SNYK-JS-MARSDB-480405",
@@ -327,18 +345,18 @@
       "severity": "CRITICAL",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 170
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 180
     },
     {
       "vuln_id": "SNYK-JS-MESSAGEFORMAT-13109646",
       "package": "messageformat",
       "title": "Prototype Pollution",
       "severity": "MEDIUM",
-      "verdict": "needs_review",
-      "confidence": 0.6,
-      "reason": "The output claims 'SUCCESS: Prototype pollution caused server error (DoS) - response code changed after pollution', which suggests a potential impact via a changed HTTP response code implying service disruption. However, there is no concrete evidence provided in the output such as the actual response codes before and after pollution, timing differences, server stack traces, or observable behavioral changes (e.g., 500 errors, increased latency, or resource exhaustion). The absence of detailed response data or logs makes it impossible to confirm whether the prototype pollution led to a real exploit or if the change in response code was incidental. Additionally, the message could be a false positive from a detection script that infers success based on indirect signals.",
-      "time_ms": 32510
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 14592
     },
     {
       "vuln_id": "SNYK-JS-MICROMATCH-6838728",
@@ -347,8 +365,8 @@
       "severity": "MEDIUM",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 10047
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 17813
     },
     {
       "vuln_id": "SNYK-JS-MOMENT-2440688",
@@ -358,7 +376,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 143
+      "time_ms": 161
     },
     {
       "vuln_id": "npm:moment:20160126",
@@ -368,7 +386,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 134
+      "time_ms": 144
     },
     {
       "vuln_id": "SNYK-JS-MULTER-10185673",
@@ -377,8 +395,8 @@
       "severity": "HIGH",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 26739
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 19403
     },
     {
       "vuln_id": "SNYK-JS-MULTER-10185675",
@@ -386,9 +404,9 @@
       "title": "Missing Release of Memory after Effective Lifetime",
       "severity": "HIGH",
       "verdict": "false_positive",
-      "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 15143
+      "confidence": 0.95,
+      "reason": "The output contains only a generic 'SUCCESS' message claiming a potential memory leak was triggered, but there is no concrete evidence of actual exploitation. No data leakage, code execution, timing delays, or system impact is demonstrated. The message does not prove that memory was actually leaked or that the vulnerability was effectively exploited. The presence of a warning about running pip as root and a notice about pip update are unrelated to exploitation success.",
+      "time_ms": 58316
     },
     {
       "vuln_id": "SNYK-JS-NOTEVIL-2385946",
@@ -397,8 +415,8 @@
       "severity": "MEDIUM",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 148
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 188
     },
     {
       "vuln_id": "SNYK-JS-SANITIZEHTML-1070780",
@@ -408,7 +426,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 142
+      "time_ms": 165
     },
     {
       "vuln_id": "SNYK-JS-SANITIZEHTML-1070786",
@@ -418,7 +436,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 163
+      "time_ms": 168
     },
     {
       "vuln_id": "SNYK-JS-SANITIZEHTML-2957526",
@@ -428,7 +446,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 149
+      "time_ms": 137
     },
     {
       "vuln_id": "SNYK-JS-SANITIZEHTML-585892",
@@ -438,7 +456,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 157
+      "time_ms": 143
     },
     {
       "vuln_id": "SNYK-JS-SANITIZEHTML-6256334",
@@ -448,7 +466,7 @@
       "verdict": "false_positive",
       "confidence": 0.9,
       "reason": "Exploit was blocked - vulnerability patched or mitigated",
-      "time_ms": 155
+      "time_ms": 153
     },
     {
       "vuln_id": "SNYK-JS-SOCKETIO-7278048",
@@ -457,18 +475,18 @@
       "severity": "HIGH",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 59189
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 33518
     },
     {
       "vuln_id": "SNYK-JS-SOCKETIOPARSER-5596892",
       "package": "socket.io-parser",
       "title": "Denial of Service (DoS)",
       "severity": "HIGH",
-      "verdict": "needs_review",
-      "confidence": 0.4,
-      "reason": "The exploit claims 'SUCCESS: Server responded abnormally after exploit - possible DoS' and reports a duration of 5518ms (~5.5 seconds), which is close to but not definitively exceeding the typical 5-second threshold used to indicate a potential ReDoS or timing-based DoS. However, there is no clear evidence provided about the nature of the 'abnormal response' \u2014 such as server crash, unresponsiveness, or error responses \u2014 nor any verification that the service was actually disrupted. The exit code 0 typically indicates successful script execution, not necessarily successful exploitation. Without proof of impact (e.g., service downtime, significant delay, or resource exhaustion), the claim remains ambiguous.",
-      "time_ms": 22904
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 18774
     },
     {
       "vuln_id": "SNYK-JS-TAR-6476909",
@@ -476,9 +494,9 @@
       "title": "Uncontrolled Resource Consumption ('Resource Exhaustion')",
       "severity": "MEDIUM",
       "verdict": "false_positive",
-      "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 55014
+      "confidence": 0.85,
+      "reason": "Exploit exited with error code 137",
+      "time_ms": 15484
     },
     {
       "vuln_id": "SNYK-JS-UNSETVALUE-2400660",
@@ -487,8 +505,8 @@
       "severity": "HIGH",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 12612
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 42905
     },
     {
       "vuln_id": "SNYK-JS-VM2-5537079",
@@ -497,8 +515,8 @@
       "severity": "MEDIUM",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 147
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 154
     },
     {
       "vuln_id": "SNYK-JS-VM2-5537100",
@@ -507,8 +525,8 @@
       "severity": "CRITICAL",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 151
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 185
     },
     {
       "vuln_id": "SNYK-JS-VM2-5772823",
@@ -517,8 +535,8 @@
       "severity": "CRITICAL",
       "verdict": "exploitable",
       "confidence": 0.95,
-      "reason": "Dependency exploit confirmed vulnerability with evidence",
-      "time_ms": 150
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 143
     },
     {
       "vuln_id": "SNYK-JS-WEB3-174533",
@@ -527,18 +545,18 @@
       "severity": "LOW",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 41177
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 13735
     },
     {
       "vuln_id": "SNYK-JS-WS-7266574",
       "package": "ws",
       "title": "Denial of Service (DoS)",
       "severity": "HIGH",
-      "verdict": "needs_review",
-      "confidence": 0.6,
-      "reason": "The output claims 'SUCCESS: Server rejected due to header limits (status 431)' which indicates the server returned a 431 status code (Request Header Fields Too Large). While this behavior might suggest the server is enforcing header size limits, it does not provide concrete evidence that a Denial of Service was achieved. A true DoS exploit would require demonstration of resource exhaustion, service crash, or prolonged unresponsiveness. The 3442ms execution time is not unusually long for a network request and does not indicate a timing-based DoS. The message appears to be an interpretation by the exploit script rather than observed impact on service availability.",
-      "time_ms": 38577
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 15301
     },
     {
       "vuln_id": "npm:base64url:20180511",
@@ -547,18 +565,18 @@
       "severity": "HIGH",
       "verdict": "false_positive",
       "confidence": 0.9,
-      "reason": "Exploit explicitly reported failure",
-      "time_ms": 15438
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 39431
     },
     {
       "vuln_id": "npm:jws:20160726",
       "package": "jws",
       "title": "Forgeable Public/Private Tokens",
       "severity": "HIGH",
-      "verdict": "needs_review",
-      "confidence": 0.4,
-      "reason": "The output claims 'SUCCESS: Successfully accessed admin endpoint with forged JWT. Authentication bypass achieved.' However, there is no concrete evidence provided in the output to verify that the authentication bypass actually occurred. There is no leaked data, no HTTP response content, no status code, and no indication of what was accessed on the admin endpoint. The absence of such details makes it impossible to confirm whether the exploit had a real impact or merely executed without error. Additionally, the message could be a false positive or a hardcoded print statement in the exploit script.",
-      "time_ms": 47732
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 35510
     }
   ]
 }

@@ -1,48 +1,119 @@
 """
 Agent 5: LLM Judge
 Interprets execution results and delivers final verdict.
-Always verifies exploit output - never blindly trusts SUCCESS claims.
+HARDCORE SKEPTICAL - never blindly trusts claims, always verifies evidence.
 """
 import json
+import re
 from services.openrouter import openrouter
 
 
-SYSTEM_PROMPT = """You are a skeptical security expert judging whether a vulnerability was ACTUALLY exploited.
+SYSTEM_PROMPT = """You are an EXTREMELY SKEPTICAL security expert judging whether a vulnerability was ACTUALLY exploited.
 
-Your job is to VERIFY the exploit output - don't blindly trust "SUCCESS" claims.
+Your default stance is: "This exploit probably didn't work. Prove me wrong."
 
-Analyze the exploit execution results and return a JSON verdict:
+## EVIDENCE REQUIREMENTS
+
+For VALID verdict, you MUST see AT LEAST ONE of these CONCRETE EVIDENCE types:
+
+1. **DATA LEAKAGE**: Actual sensitive data visible in output
+   - Database records, passwords, tokens, PII
+   - File contents that shouldn't be accessible
+   
+2. **AUTH BYPASS**: Clear proof of unauthorized access
+   - Admin panel content, protected API responses
+   - JWT tokens accepted without proper signature
+   
+3. **CODE EXECUTION**: Proof that arbitrary code ran
+   - Output of injected commands (whoami, id, etc.)
+   - File system changes, process execution
+   - "SANDBOX_ESCAPED" or similar escape confirmation
+   
+4. **TIMING ATTACKS**: Measurable delay
+   - ReDoS: Response time > 1000ms
+   - Blind injection: Noticeable delay
+   
+5. **REFLECTED PAYLOADS**: Payload in response
+   - XSS: Unescaped script tags in HTML
+   - Injection: Query reflected in error
+
+6. **VULNERABLE PACKAGE CONFIRMATION**:
+   - Output explicitly states "VULNERABLE:" with evidence
+   - Package version confirmed to be in vulnerable range
+
+## RED FLAGS (Mark INVALID unless explained):
+
+- Output just says "SUCCESS" with no details
+- Python/Node errors or exceptions
+- "Cannot read property" or similar runtime errors
+- Connection refused, timeout without impact
+- Exploit script crashed before completion
+- Output says "test passed" without exploitation proof
+
+## VERDICT CRITERIA:
+
+VALID (0.8-1.0 confidence):
+- Clear evidence from list above
+- The evidence proves ACTUAL exploitation, not just attempt
+
+INVALID (0.8-1.0 confidence):
+- Exploit clearly failed
+- BLOCKED/FAILED in output
+- No evidence despite successful execution
+- Patched version detected
+
+NEEDS_REVIEW (0.5-0.7 confidence):
+- Ambiguous output
+- Partial evidence
+- Edge cases
+
+Return ONLY valid JSON:
 {
     "verdict": "VALID" | "INVALID" | "NEEDS_REVIEW",
     "confidence": 0.0-1.0,
-    "reasoning": "Detailed explanation of your verdict",
-    "evidence": ["Key evidence point 1", "Key evidence point 2"],
-    "recommendations": ["Recommendation 1", "Recommendation 2"]
-}
-
-STRICT Verdict criteria:
-- VALID: You see CONCRETE EVIDENCE in the output:
-  * Leaked data that shouldn't be accessible
-  * Auth bypass with access to protected resources
-  * RCE with command output
-  * Response time > 5s for ReDoS
-  * Reflected payload for XSS
-  
-- INVALID: The exploit clearly failed:
-  * Quick responses for ReDoS (< 5s)
-  * Payload was escaped/sanitized
-  * Access denied / 401/403 responses
-  * No evidence of impact
-
-- NEEDS_REVIEW: Results are ambiguous
-
-BE SKEPTICAL! If the exploit just says "SUCCESS" without showing actual evidence of exploitation, mark as INVALID or NEEDS_REVIEW.
-
-Only output valid JSON."""
+    "reasoning": "Explain what evidence you found or why it's missing",
+    "evidence": ["Specific evidence from output"],
+    "recommendations": ["Action items"]
+}"""
 
 
 class LLMJudgeAgent:
-    """Interprets exploit results and delivers verdict with skeptical verification."""
+    """Interprets exploit results with HARDCORE SKEPTICISM."""
+    
+    # Patterns that PROVE exploitation
+    VULNERABLE_PATTERNS = [
+        r"VULNERABLE:",           # Our exploits use this
+        r"SANDBOX_ESCAPED",       # vm2 sandbox bypass
+        r"RCE possible",          # Remote code execution
+        r"auth bypass",           # Authentication bypass
+        r"leaked.*password",      # Data leakage
+        r"leaked.*token",         # Token leakage
+        r"admin.*access",         # Unauthorized access
+    ]
+    
+    # Patterns that PROVE failure/blocking
+    BLOCKED_PATTERNS = [
+        r"BLOCKED:",              # Our exploits use this
+        r"FAILED:",               # Explicit failure
+        r"patched",               # Patched version
+        r"sanitized",             # Input was sanitized
+        r"Access denied",         # Access control worked
+        r"401|403",               # Auth/authz blocked
+    ]
+    
+    # Patterns that indicate BROKEN EXPLOIT (not target protection)
+    BROKEN_EXPLOIT_PATTERNS = [
+        r"Cannot read propert",   # JS property error
+        r"undefined is not",      # JS undefined error
+        r"TypeError:",            # Type errors
+        r"ReferenceError:",       # Reference errors
+        r"SyntaxError:",          # Syntax errors
+        r"ModuleNotFoundError",   # Python import error
+        r"ImportError",           # Python import error
+        r"No such file",          # File not found
+        r"ENOENT",                # Node file not found
+        r"CONNECTION_REFUSED",    # Connection refused
+    ]
     
     async def judge(
         self,
@@ -52,73 +123,134 @@ class LLMJudgeAgent:
     ) -> dict:
         """
         Judge whether the vulnerability was successfully exploited.
-        Always verifies claims - never blindly trusts SUCCESS pattern.
+        HARDCORE SKEPTICAL - default to INVALID unless proven otherwise.
         """
         stdout = exploit_result.get("stdout", "")
         stderr = exploit_result.get("stderr", "")
         exit_code = exploit_result.get("exit_code", 1)
+        combined_output = f"{stdout}\n{stderr}"
         
-        # Quick rejection for obvious failures
-        if exit_code != 0 and "FAILED:" in stdout:
+        # ================================================================
+        # PHASE 1: Quick Accept - Clear VULNERABLE evidence
+        # ================================================================
+        for pattern in self.VULNERABLE_PATTERNS:
+            if re.search(pattern, combined_output, re.IGNORECASE):
+                evidence_lines = [line for line in stdout.split('\n') 
+                                  if re.search(pattern, line, re.IGNORECASE)]
+                return {
+                    "success": True,
+                    "verdict": "VALID",
+                    "confidence": 0.95,
+                    "reasoning": "Exploit confirmed vulnerability with concrete evidence",
+                    "evidence": evidence_lines[:3] if evidence_lines else [f"Pattern matched: {pattern}"],
+                    "recommendations": [
+                        "Update the vulnerable package immediately",
+                        "Check for other usages of this package"
+                    ],
+                    "source": "pattern_match_vulnerable"
+                }
+        
+        # ================================================================
+        # PHASE 2: Quick Reject - Clear BLOCKED/FAILED evidence  
+        # ================================================================
+        for pattern in self.BLOCKED_PATTERNS:
+            if re.search(pattern, combined_output, re.IGNORECASE):
+                return {
+                    "success": True,
+                    "verdict": "INVALID",
+                    "confidence": 0.90,
+                    "reasoning": "Exploit was blocked - vulnerability patched or mitigated",
+                    "evidence": [f"Pattern matched: {pattern}"],
+                    "recommendations": ["Vulnerability appears to be patched"],
+                    "source": "pattern_match_blocked"
+                }
+        
+        # ================================================================
+        # PHASE 3: Detect BROKEN EXPLOIT (our code is wrong, not target patched)
+        # ================================================================
+        for pattern in self.BROKEN_EXPLOIT_PATTERNS:
+            if re.search(pattern, combined_output, re.IGNORECASE):
+                # This is tricky - the exploit broke, but is target vulnerable?
+                # Be conservative: mark as NEEDS_REVIEW since we can't tell
+                return {
+                    "success": True,
+                    "verdict": "NEEDS_REVIEW",
+                    "confidence": 0.60,
+                    "reasoning": f"Exploit script encountered error: {pattern}. Cannot determine if target is vulnerable.",
+                    "evidence": [
+                        f"Error pattern: {pattern}",
+                        "Exploit may be broken or target may be patched"
+                    ],
+                    "recommendations": [
+                        "Review exploit code for errors",
+                        "Manual testing recommended",
+                        "Update exploit to handle this case"
+                    ],
+                    "source": "broken_exploit_detected"
+                }
+        
+        # ================================================================
+        # PHASE 4: Check for empty or suspicious output
+        # ================================================================
+        if not stdout.strip() and not stderr.strip():
+            return {
+                "success": True,
+                "verdict": "NEEDS_REVIEW",
+                "confidence": 0.50,
+                "reasoning": "No output from exploit - cannot determine result",
+                "evidence": ["Empty stdout and stderr"],
+                "recommendations": ["Manual review required"],
+                "source": "empty_output"
+            }
+        
+        # Only "SUCCESS" with no details = suspicious
+        if re.search(r"^SUCCESS$", stdout.strip(), re.MULTILINE):
+            if len(stdout) < 50:  # Very short output with just SUCCESS
+                return {
+                    "success": True,
+                    "verdict": "NEEDS_REVIEW",
+                    "confidence": 0.55,
+                    "reasoning": "Output claims SUCCESS but provides no evidence",
+                    "evidence": ["Generic SUCCESS without proof"],
+                    "recommendations": ["Verify manually - success claim unsubstantiated"],
+                    "source": "unsubstantiated_success"
+                }
+        
+        # ================================================================
+        # PHASE 5: Non-zero exit with errors = likely failure
+        # ================================================================
+        if exit_code != 0:
             return {
                 "success": True,
                 "verdict": "INVALID",
-                "confidence": 0.90,
-                "reasoning": "Exploit explicitly reported failure",
+                "confidence": 0.85,
+                "reasoning": f"Exploit exited with error code {exit_code}",
                 "evidence": [
                     f"Exit code: {exit_code}",
-                    "FAILED pattern in output"
+                    stderr[:200] if stderr else "No stderr"
                 ],
-                "recommendations": [
-                    "Likely a false positive from scanner",
-                    "Check if patches have been applied"
-                ],
-                "source": "quick_reject"
+                "recommendations": ["Exploit failed to execute properly"],
+                "source": "non_zero_exit"
             }
         
-        # For BLOCKED patterns (dependency exploits)
-        if "BLOCKED:" in stdout or "BLOCKED:" in stderr:
-            return {
-                "success": True,
-                "verdict": "INVALID",
-                "confidence": 0.90,
-                "reasoning": "Exploit was blocked - vulnerability patched or mitigated",
-                "evidence": ["BLOCKED pattern in output"],
-                "recommendations": ["Vulnerability appears to be patched"],
-                "source": "quick_reject"
-            }
-        
-        # For VULNERABLE patterns (dependency exploits) - these are reliable
-        if "VULNERABLE:" in stdout:
-            # Extract the evidence after VULNERABLE:
-            evidence_line = [line for line in stdout.split('\n') if 'VULNERABLE:' in line]
-            return {
-                "success": True,
-                "verdict": "VALID",
-                "confidence": 0.95,
-                "reasoning": "Dependency exploit confirmed vulnerability with evidence",
-                "evidence": evidence_line[:2] if evidence_line else ["VULNERABLE pattern found"],
-                "recommendations": [
-                    "Update the vulnerable package immediately",
-                    "Check for other usages of this package"
-                ],
-                "source": "dependency_exploit"
-            }
-        
-        # For all other cases, use LLM to verify
-        return await self._llm_verify(vuln_data, code_analysis, exploit_result)
+        # ================================================================
+        # PHASE 6: Use LLM for ambiguous cases (SKEPTICALLY)
+        # ================================================================
+        return await self._llm_verify_skeptical(vuln_data, code_analysis, exploit_result)
     
-    async def _llm_verify(
+    async def _llm_verify_skeptical(
         self,
         vuln_data: dict,
         code_analysis: dict,
         exploit_result: dict
     ) -> dict:
-        """Use LLM to skeptically verify exploit results."""
+        """Use LLM with MAXIMUM SKEPTICISM to verify exploit results."""
         stdout = exploit_result.get('stdout', 'No output')
         stderr = exploit_result.get('stderr', 'No errors')
         
-        user_content = f"""Skeptically verify this exploitation attempt:
+        user_content = f"""SKEPTICALLY analyze this exploitation attempt.
+
+DEFAULT STANCE: This exploit probably FAILED. Prove me wrong with CONCRETE EVIDENCE.
 
 ## Vulnerability
 Type: {vuln_data.get('vulnerability_type')}
@@ -136,59 +268,79 @@ Duration: {exploit_result.get('duration_ms')}ms
 ### STDERR:
 {stderr[:1000]}
 
-IMPORTANT: Look for ACTUAL EVIDENCE of exploitation in the output.
-- Just printing "SUCCESS" is NOT enough
-- Need to see: leaked data, bypassed auth, slow response times, reflected payloads, etc.
-- If no concrete evidence, mark as INVALID or NEEDS_REVIEW"""
+## YOUR TASK:
+1. Look for CONCRETE EVIDENCE of exploitation (leaked data, bypassed auth, RCE output, timing delays, reflected payloads)
+2. If you see ONLY generic "success" messages without proof, mark INVALID
+3. If output shows errors/exceptions, mark INVALID or NEEDS_REVIEW
+4. Be PARANOID - assume the exploit failed unless you have proof
+
+Return ONLY JSON with verdict, confidence, reasoning, evidence, recommendations."""
 
         try:
             response = await openrouter.analyze(
                 system_prompt=SYSTEM_PROMPT,
                 user_content=user_content,
-                temperature=0.2,
-                trace_name="llm_judge_verify",
+                temperature=0.1,  # Lower temp for more consistent skepticism
+                trace_name="llm_judge_skeptical",
                 metadata={
                     "vuln_type": vuln_data.get('vulnerability_type'),
                     "package": vuln_data.get('package_name'),
                     "severity": vuln_data.get('severity'),
                     "exit_code": exploit_result.get('exit_code'),
-                    "has_success": "SUCCESS" in stdout
+                    "output_length": len(stdout)
                 }
             )
             
             # Parse JSON response
-            parsed = json.loads(response)
+            parsed = self._parse_json_response(response)
             parsed["success"] = True
-            parsed["source"] = "llm_verified"
+            parsed["source"] = "llm_skeptical_verified"
             return parsed
             
-        except json.JSONDecodeError:
-            # Try to extract JSON from response
-            try:
-                import re
-                json_match = re.search(r'\{[^{}]*\}', response, re.DOTALL)
-                if json_match:
-                    parsed = json.loads(json_match.group())
-                    parsed["success"] = True
-                    parsed["source"] = "llm_verified_extracted"
-                    return parsed
-            except:
-                pass
-            
+        except Exception as e:
             return {
                 "success": True,
                 "verdict": "NEEDS_REVIEW",
-                "confidence": 0.5,
-                "reasoning": "Could not parse LLM judgment",
+                "confidence": 0.50,
+                "reasoning": f"LLM verification failed: {str(e)}",
                 "evidence": [],
                 "recommendations": ["Manual review required"],
-                "source": "fallback"
+                "source": "llm_error_fallback"
             }
-        except Exception as e:
-            return {
-                "success": False,
-                "error": str(e)
-            }
+    
+    def _parse_json_response(self, response: str) -> dict:
+        """Robustly parse JSON from LLM response."""
+        # Try direct parse
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            pass
+        
+        # Try to extract JSON block
+        try:
+            # Look for JSON in code blocks
+            json_match = re.search(r'```(?:json)?\s*(\{[^`]+\})\s*```', response, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(1))
+        except:
+            pass
+        
+        # Try to find any JSON object
+        try:
+            json_match = re.search(r'\{[^{}]*"verdict"[^{}]*\}', response, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+        except:
+            pass
+        
+        # Fallback
+        return {
+            "verdict": "NEEDS_REVIEW",
+            "confidence": 0.50,
+            "reasoning": "Could not parse LLM judgment",
+            "evidence": [],
+            "recommendations": ["Manual review required"]
+        }
 
 
 # Singleton instance
