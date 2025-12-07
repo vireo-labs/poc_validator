@@ -1,26 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-type ValidationStatus =
-    | "PENDING"
-    | "PARSING"
-    | "ANALYZING"
-    | "DISCOVERING"
-    | "EXECUTING"
-    | "JUDGING"
-    | "COMPLETED"
-    | "FAILED";
+type ValidationMode = "single" | "batch";
 
-type Verdict = "VALID" | "INVALID" | "NEEDS_REVIEW" | null;
+type SingleStatus = "PENDING" | "PARSING" | "ANALYZING" | "DISCOVERING" | "EXECUTING" | "JUDGING" | "COMPLETED" | "FAILED";
+type BatchStatus = "pending" | "running" | "completed" | "failed";
 
-interface ValidationResult {
+interface SingleResult {
     id: number;
-    status: ValidationStatus;
-    verdict: Verdict;
+    status: SingleStatus;
+    verdict: string | null;
     parsed_data?: Record<string, unknown>;
     code_analysis?: Record<string, unknown>;
     exploit_name?: string;
@@ -31,8 +24,29 @@ interface ValidationResult {
         duration_ms: number;
     };
     judge_reasoning?: string;
-    started_at?: string;
-    completed_at?: string;
+}
+
+interface BatchResult {
+    job_id: string;
+    status: BatchStatus;
+    total_alerts: number;
+    unique_vulnerabilities: number;
+    summary?: {
+        exploitable_count: number;
+        by_verdict: Record<string, number>;
+    };
+    exploitable?: Array<{
+        package: string;
+        severity: string;
+        title: string;
+        exploit_source: string;
+    }>;
+    results?: Array<{
+        package: string;
+        verdict: string;
+        reason: string;
+    }>;
+    error?: string;
 }
 
 const AGENTS = [
@@ -46,21 +60,14 @@ const AGENTS = [
 const SAMPLE_VULNS = [
     {
         title: "SQL Injection in Login",
-        description: "The login endpoint is vulnerable to SQL injection. An attacker can bypass authentication by injecting SQL code in the email field.",
+        description: "The login endpoint is vulnerable to SQL injection.",
         vulnerability_type: "SQLi",
         severity: "CRITICAL",
         affected_file: "routes/login.ts",
     },
     {
-        title: "Reflected XSS in Search",
-        description: "The search functionality reflects user input without sanitization, allowing XSS attacks.",
-        vulnerability_type: "XSS",
-        severity: "HIGH",
-        affected_file: "routes/search.ts",
-    },
-    {
         title: "JWT Algorithm Confusion",
-        description: "The JWT verification allows 'none' algorithm, enabling authentication bypass.",
+        description: "The JWT verification allows 'none' algorithm.",
         vulnerability_type: "AuthBypass",
         severity: "CRITICAL",
         affected_file: "lib/insecurity.ts",
@@ -68,6 +75,9 @@ const SAMPLE_VULNS = [
 ];
 
 export default function ValidatePage() {
+    const [mode, setMode] = useState<ValidationMode>("batch");
+
+    // Single validation state
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -77,21 +87,28 @@ export default function ValidatePage() {
         source: "manual",
         repo_url: "https://github.com/varun2117/juice-shop",
     });
+    const [singleResult, setSingleResult] = useState<SingleResult | null>(null);
+    const [singleId, setSingleId] = useState<number | null>(null);
 
-    const [validationId, setValidationId] = useState<number | null>(null);
-    const [result, setResult] = useState<ValidationResult | null>(null);
+    // Batch validation state
+    const [file, setFile] = useState<File | null>(null);
+    const [projectPath, setProjectPath] = useState("");
+    const [batchResult, setBatchResult] = useState<BatchResult | null>(null);
+    const [batchJobId, setBatchJobId] = useState<string | null>(null);
+
+    // Common state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Poll for status updates
+    // Poll for single validation
     useEffect(() => {
-        if (!validationId) return;
+        if (!singleId) return;
 
         const poll = setInterval(async () => {
             try {
-                const res = await fetch(`${API_URL}/api/validate/${validationId}`);
-                const data: ValidationResult = await res.json();
-                setResult(data);
+                const res = await fetch(`${API_URL}/api/validate/${singleId}`);
+                const data: SingleResult = await res.json();
+                setSingleResult(data);
 
                 if (data.status === "COMPLETED" || data.status === "FAILED") {
                     clearInterval(poll);
@@ -102,14 +119,35 @@ export default function ValidatePage() {
         }, 1000);
 
         return () => clearInterval(poll);
-    }, [validationId]);
+    }, [singleId]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    // Poll for batch validation
+    useEffect(() => {
+        if (!batchJobId) return;
+
+        const poll = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/batch/${batchJobId}`);
+                const data: BatchResult = await res.json();
+                setBatchResult(data);
+
+                if (data.status === "completed" || data.status === "failed") {
+                    clearInterval(poll);
+                }
+            } catch (e) {
+                console.error("Polling error:", e);
+            }
+        }, 2000);
+
+        return () => clearInterval(poll);
+    }, [batchJobId]);
+
+    const handleSingleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
-        setValidationId(null);
-        setResult(null);
+        setSingleId(null);
+        setSingleResult(null);
 
         try {
             const res = await fetch(`${API_URL}/api/validate`, {
@@ -121,8 +159,8 @@ export default function ValidatePage() {
             if (!res.ok) throw new Error("Failed to submit validation");
 
             const data = await res.json();
-            setValidationId(data.id);
-            setResult({ id: data.id, status: "PENDING", verdict: null });
+            setSingleId(data.id);
+            setSingleResult({ id: data.id, status: "PENDING", verdict: null });
         } catch (e) {
             setError(e instanceof Error ? e.message : "Unknown error");
         } finally {
@@ -130,34 +168,73 @@ export default function ValidatePage() {
         }
     };
 
+    const handleBatchSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!file) {
+            setError("Please select a Snyk JSON file");
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+        setBatchJobId(null);
+        setBatchResult(null);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("project_path", projectPath);
+
+            const res = await fetch(`${API_URL}/api/batch/validate`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.detail || "Failed to submit batch validation");
+            }
+
+            const data = await res.json();
+            setBatchJobId(data.job_id);
+            setBatchResult({
+                job_id: data.job_id,
+                status: "pending",
+                total_alerts: data.total_alerts,
+                unique_vulnerabilities: data.unique_vulnerabilities
+            });
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Unknown error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleFileDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        const droppedFile = e.dataTransfer.files[0];
+        if (droppedFile?.name.endsWith('.json')) {
+            setFile(droppedFile);
+        }
+    }, []);
+
     const loadSample = (index: number) => {
         const sample = SAMPLE_VULNS[index];
         setFormData({ ...formData, ...sample });
     };
 
     const getAgentStatus = (agentKey: string) => {
-        if (!result) return "pending";
-
+        if (!singleResult) return "pending";
         const order = AGENTS.map(a => a.key);
-        const currentIndex = order.indexOf(result.status);
+        const currentIndex = order.indexOf(singleResult.status);
         const agentIndex = order.indexOf(agentKey);
 
-        if (result.status === "COMPLETED" || result.status === "FAILED") {
-            return agentIndex <= order.indexOf("JUDGING") ? "complete" : "pending";
+        if (singleResult.status === "COMPLETED" || singleResult.status === "FAILED") {
+            return "complete";
         }
-
         if (agentIndex < currentIndex) return "complete";
         if (agentIndex === currentIndex) return "active";
         return "pending";
-    };
-
-    const getVerdictColor = (verdict: Verdict) => {
-        switch (verdict) {
-            case "VALID": return "text-emerald-400 border-emerald-500/50 bg-emerald-500/10";
-            case "INVALID": return "text-red-400 border-red-500/50 bg-red-500/10";
-            case "NEEDS_REVIEW": return "text-amber-400 border-amber-500/50 bg-amber-500/10";
-            default: return "text-gray-400 border-gray-500/50 bg-gray-500/10";
-        }
     };
 
     return (
@@ -174,240 +251,328 @@ export default function ValidatePage() {
                             <p className="text-xs text-gray-500">Security Vulnerability Validation</p>
                         </div>
                     </Link>
+                    <nav className="flex items-center gap-6">
+                        <Link href="/" className="text-gray-400 hover:text-white transition-colors">Home</Link>
+                        <Link href="/results" className="text-gray-400 hover:text-white transition-colors">Results</Link>
+                    </nav>
                 </div>
             </header>
 
             <div className="max-w-7xl mx-auto px-6 py-12">
+                {/* Mode Toggle */}
+                <div className="flex gap-4 mb-8">
+                    <button
+                        onClick={() => setMode("batch")}
+                        className={`px-6 py-3 rounded-lg font-medium transition-all ${mode === "batch"
+                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                                : "bg-[#1e1e2e] text-gray-400 hover:text-white"
+                            }`}
+                    >
+                        📁 Batch Upload (Snyk JSON)
+                    </button>
+                    <button
+                        onClick={() => setMode("single")}
+                        className={`px-6 py-3 rounded-lg font-medium transition-all ${mode === "single"
+                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                                : "bg-[#1e1e2e] text-gray-400 hover:text-white"
+                            }`}
+                    >
+                        📝 Single Vulnerability
+                    </button>
+                </div>
+
                 <div className="grid lg:grid-cols-2 gap-12">
-                    {/* Form Section */}
+                    {/* Left: Form Section */}
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Submit Vulnerability</h2>
-                        <p className="text-gray-400 mb-6">Enter vulnerability details to validate</p>
+                        {mode === "batch" ? (
+                            <>
+                                <h2 className="text-2xl font-bold text-white mb-2">Upload Snyk Report</h2>
+                                <p className="text-gray-400 mb-6">Drop your Snyk JSON export to validate all vulnerabilities</p>
 
-                        {/* GitHub Repo Input */}
-                        <div className="mb-6 p-4 rounded-xl bg-[#111118] border border-[#1e1e2e]">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" /></svg>
-                                    GitHub Repository
-                                </span>
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.repo_url}
-                                onChange={e => setFormData({ ...formData, repo_url: e.target.value })}
-                                className="w-full px-4 py-3 bg-[#0a0a0f] border border-[#2e2e4e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 font-mono text-sm"
-                                placeholder="https://github.com/owner/repo"
-                            />
-                        </div>
-
-                        {/* Sample Buttons */}
-                        <div className="flex gap-2 mb-6">
-                            <span className="text-sm text-gray-500">Quick fill:</span>
-                            {SAMPLE_VULNS.map((v, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => loadSample(i)}
-                                    className="px-3 py-1 text-xs bg-[#1e1e2e] text-gray-300 rounded hover:bg-[#2a2a3e] transition-colors"
-                                >
-                                    {v.vulnerability_type}
-                                </button>
-                            ))}
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
-                                <input
-                                    type="text"
-                                    value={formData.title}
-                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                    className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
-                                    placeholder="e.g., SQL Injection in Login"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 h-32"
-                                    placeholder="Describe the vulnerability and how it can be exploited..."
-                                    required
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Type</label>
-                                    <select
-                                        value={formData.vulnerability_type}
-                                        onChange={e => setFormData({ ...formData, vulnerability_type: e.target.value })}
-                                        className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+                                <form onSubmit={handleBatchSubmit} className="space-y-6">
+                                    {/* File Drop Zone */}
+                                    <div
+                                        onDrop={handleFileDrop}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${file
+                                                ? "border-emerald-500/50 bg-emerald-500/5"
+                                                : "border-[#2e2e4e] hover:border-emerald-500/30"
+                                            }`}
                                     >
-                                        <option value="">Select type...</option>
-                                        <option value="SQLi">SQL Injection</option>
-                                        <option value="XSS">Cross-Site Scripting</option>
-                                        <option value="AuthBypass">Auth Bypass</option>
-                                        <option value="IDOR">IDOR</option>
-                                        <option value="PathTraversal">Path Traversal</option>
-                                        <option value="RCE">Remote Code Execution</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Severity</label>
-                                    <select
-                                        value={formData.severity}
-                                        onChange={e => setFormData({ ...formData, severity: e.target.value })}
-                                        className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
-                                    >
-                                        <option value="">Select severity...</option>
-                                        <option value="CRITICAL">Critical</option>
-                                        <option value="HIGH">High</option>
-                                        <option value="MEDIUM">Medium</option>
-                                        <option value="LOW">Low</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Affected File (optional)</label>
-                                <input
-                                    type="text"
-                                    value={formData.affected_file}
-                                    onChange={e => setFormData({ ...formData, affected_file: e.target.value })}
-                                    className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
-                                    placeholder="e.g., routes/login.ts"
-                                />
-                            </div>
-
-                            {error && (
-                                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
-                                    {error}
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || (result && result.status !== "COMPLETED" && result.status !== "FAILED")}
-                                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Submitting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                        </svg>
-                                        Start Validation
-                                    </>
-                                )}
-                            </button>
-                        </form>
-                    </div>
-
-                    {/* Results Section */}
-                    <div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Validation Progress</h2>
-                        <p className="text-gray-400 mb-6">Watch the 5-agent pipeline process your vulnerability</p>
-
-                        {/* Agent Pipeline */}
-                        <div className="space-y-4 mb-8">
-                            {AGENTS.map((agent, i) => {
-                                const status = getAgentStatus(agent.key);
-                                return (
-                                    <div key={i} className={`p-4 rounded-xl border transition-all duration-300 ${status === "active"
-                                        ? "bg-emerald-500/10 border-emerald-500/50"
-                                        : status === "complete"
-                                            ? "bg-[#111118] border-emerald-500/30"
-                                            : "bg-[#111118] border-[#1e1e2e]"
-                                        }`}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${status === "active"
-                                                ? "bg-emerald-500/20 animate-pulse-glow"
-                                                : status === "complete"
-                                                    ? "bg-emerald-500/20"
-                                                    : "bg-[#1e1e2e]"
-                                                }`}>
-                                                {status === "complete" ? (
-                                                    <span className="text-emerald-400">✓</span>
-                                                ) : (
-                                                    <span className="text-xl">{agent.icon}</span>
-                                                )}
+                                        {file ? (
+                                            <div className="space-y-2">
+                                                <span className="text-4xl">📄</span>
+                                                <p className="text-white font-medium">{file.name}</p>
+                                                <p className="text-gray-500 text-sm">{(file.size / 1024).toFixed(1)} KB</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFile(null)}
+                                                    className="text-red-400 text-sm hover:underline"
+                                                >
+                                                    Remove
+                                                </button>
                                             </div>
-                                            <div className="flex-1">
-                                                <h4 className={`font-medium ${status === "active" ? "text-emerald-400" :
-                                                    status === "complete" ? "text-white" : "text-gray-500"
-                                                    }`}>
-                                                    {agent.name}
-                                                </h4>
-                                                <p className="text-sm text-gray-500">{agent.desc}</p>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <span className="text-4xl">📁</span>
+                                                <p className="text-gray-400">Drop Snyk JSON file here or</p>
+                                                <label className="inline-block px-4 py-2 bg-[#1e1e2e] text-white rounded-lg cursor-pointer hover:bg-[#2a2a3e]">
+                                                    Browse Files
+                                                    <input
+                                                        type="file"
+                                                        accept=".json"
+                                                        onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                                        className="hidden"
+                                                    />
+                                                </label>
                                             </div>
-                                            {status === "active" && (
-                                                <svg className="animate-spin w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
-                                );
-                            })}
-                        </div>
 
-                        {/* Verdict */}
-                        {result?.verdict && (
-                            <div className={`p-6 rounded-xl border ${getVerdictColor(result.verdict)}`}>
-                                <div className="flex items-center gap-4 mb-4">
-                                    <span className="text-4xl">
-                                        {result.verdict === "VALID" ? "✅" : result.verdict === "INVALID" ? "❌" : "⚠️"}
-                                    </span>
+                                    {/* Project Path */}
                                     <div>
-                                        <h3 className="text-2xl font-bold">{result.verdict}</h3>
-                                        <p className="text-sm opacity-75">
-                                            {result.verdict === "VALID"
-                                                ? "Vulnerability confirmed exploitable"
-                                                : result.verdict === "INVALID"
-                                                    ? "Not exploitable - likely false positive"
-                                                    : "Requires manual review"}
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                                            Project Path (optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={projectPath}
+                                            onChange={(e) => setProjectPath(e.target.value)}
+                                            className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+                                            placeholder="/path/to/project (for dependency exploits)"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Path to project with node_modules for npm dependency validation
                                         </p>
                                     </div>
+
+                                    {error && (
+                                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting || !file || (batchResult?.status === "running")}
+                                        className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                </svg>
+                                                Uploading...
+                                            </>
+                                        ) : (
+                                            <>🚀 Validate All Vulnerabilities</>
+                                        )}
+                                    </button>
+                                </form>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-2xl font-bold text-white mb-2">Submit Vulnerability</h2>
+                                <p className="text-gray-400 mb-6">Enter vulnerability details to validate</p>
+
+                                <div className="flex gap-2 mb-6">
+                                    <span className="text-sm text-gray-500">Quick fill:</span>
+                                    {SAMPLE_VULNS.map((v, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => loadSample(i)}
+                                            className="px-3 py-1 text-xs bg-[#1e1e2e] text-gray-300 rounded hover:bg-[#2a2a3e]"
+                                        >
+                                            {v.vulnerability_type}
+                                        </button>
+                                    ))}
                                 </div>
 
-                                {result.judge_reasoning && (
-                                    <div className="mt-4 p-4 bg-black/20 rounded-lg">
-                                        <h4 className="text-sm font-medium mb-2">Judge Reasoning:</h4>
-                                        <p className="text-sm opacity-75">{result.judge_reasoning}</p>
-                                    </div>
-                                )}
-
-                                {result.exploit_name && (
-                                    <div className="mt-4 text-sm opacity-75">
-                                        <strong>Exploit Used:</strong> {result.exploit_name}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {result?.status === "FAILED" && (
-                            <div className="p-6 rounded-xl border border-red-500/50 bg-red-500/10">
-                                <div className="flex items-center gap-4">
-                                    <span className="text-4xl">💥</span>
+                                <form onSubmit={handleSingleSubmit} className="space-y-4">
                                     <div>
-                                        <h3 className="text-2xl font-bold text-red-400">Validation Failed</h3>
-                                        <p className="text-sm text-gray-400">An error occurred during the validation process</p>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                                        <input
+                                            type="text"
+                                            value={formData.title}
+                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                            className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+                                            placeholder="e.g., SQL Injection in Login"
+                                            required
+                                        />
                                     </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                                        <textarea
+                                            value={formData.description}
+                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            className="w-full px-4 py-3 bg-[#111118] border border-[#1e1e2e] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 h-32"
+                                            placeholder="Describe the vulnerability..."
+                                            required
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-lg hover:opacity-90 disabled:opacity-50"
+                                    >
+                                        Start Validation
+                                    </button>
+                                </form>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Right: Results Section */}
+                    <div>
+                        {mode === "batch" ? (
+                            <>
+                                <h2 className="text-2xl font-bold text-white mb-2">Batch Results</h2>
+                                <p className="text-gray-400 mb-6">Validation progress and exploitable vulnerabilities</p>
+
+                                {batchResult ? (
+                                    <div className="space-y-6">
+                                        {/* Status Card */}
+                                        <div className={`p-6 rounded-xl border ${batchResult.status === "completed"
+                                                ? "border-emerald-500/50 bg-emerald-500/5"
+                                                : batchResult.status === "failed"
+                                                    ? "border-red-500/50 bg-red-500/5"
+                                                    : "border-[#2e2e4e] bg-[#111118]"
+                                            }`}>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <p className="text-gray-400 text-sm">Job ID</p>
+                                                    <p className="text-white font-mono">{batchResult.job_id}</p>
+                                                </div>
+                                                <div className={`px-3 py-1 rounded-full text-sm ${batchResult.status === "completed"
+                                                        ? "bg-emerald-500/20 text-emerald-400"
+                                                        : batchResult.status === "running"
+                                                            ? "bg-amber-500/20 text-amber-400"
+                                                            : batchResult.status === "failed"
+                                                                ? "bg-red-500/20 text-red-400"
+                                                                : "bg-gray-500/20 text-gray-400"
+                                                    }`}>
+                                                    {batchResult.status === "running" && (
+                                                        <span className="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse mr-2"></span>
+                                                    )}
+                                                    {batchResult.status.toUpperCase()}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="p-3 bg-black/20 rounded-lg">
+                                                    <p className="text-gray-500 text-xs">Total Alerts</p>
+                                                    <p className="text-2xl font-bold text-white">{batchResult.total_alerts}</p>
+                                                </div>
+                                                <div className="p-3 bg-black/20 rounded-lg">
+                                                    <p className="text-gray-500 text-xs">Unique Packages</p>
+                                                    <p className="text-2xl font-bold text-white">{batchResult.unique_vulnerabilities}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Summary */}
+                                        {batchResult.summary && (
+                                            <div className="p-6 rounded-xl border border-[#2e2e4e] bg-[#111118]">
+                                                <h3 className="text-lg font-bold text-white mb-4">Summary</h3>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                                                        <p className="text-red-400 text-xs uppercase">Exploitable</p>
+                                                        <p className="text-3xl font-bold text-red-400">{batchResult.summary.exploitable_count}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                                                        <p className="text-emerald-400 text-xs uppercase">False Positives</p>
+                                                        <p className="text-3xl font-bold text-emerald-400">
+                                                            {batchResult.summary.by_verdict?.false_positive || 0}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Exploitable List */}
+                                        {batchResult.exploitable && batchResult.exploitable.length > 0 && (
+                                            <div className="p-6 rounded-xl border border-red-500/30 bg-red-500/5">
+                                                <h3 className="text-lg font-bold text-red-400 mb-4">
+                                                    🚨 Exploitable ({batchResult.exploitable.length})
+                                                </h3>
+                                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                    {batchResult.exploitable.map((item, i) => (
+                                                        <div key={i} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
+                                                            <div>
+                                                                <span className={`text-xs px-2 py-0.5 rounded mr-2 ${item.severity === "CRITICAL" ? "bg-red-500 text-white" :
+                                                                        item.severity === "HIGH" ? "bg-orange-500 text-white" :
+                                                                            "bg-yellow-500 text-black"
+                                                                    }`}>
+                                                                    {item.severity}
+                                                                </span>
+                                                                <span className="text-white font-medium">{item.package}</span>
+                                                            </div>
+                                                            <span className="text-xs text-gray-500">{item.exploit_source}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {batchResult.error && (
+                                            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
+                                                Error: {batchResult.error}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="p-12 rounded-xl border border-[#2e2e4e] bg-[#111118] text-center">
+                                        <span className="text-4xl">📊</span>
+                                        <p className="text-gray-400 mt-4">Upload a Snyk JSON file to see results</p>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-2xl font-bold text-white mb-2">Validation Progress</h2>
+                                <p className="text-gray-400 mb-6">Watch the 5-agent pipeline</p>
+
+                                <div className="space-y-4 mb-8">
+                                    {AGENTS.map((agent, i) => {
+                                        const status = getAgentStatus(agent.key);
+                                        return (
+                                            <div key={i} className={`p-4 rounded-xl border transition-all ${status === "active" ? "bg-emerald-500/10 border-emerald-500/50" :
+                                                    status === "complete" ? "bg-[#111118] border-emerald-500/30" :
+                                                        "bg-[#111118] border-[#1e1e2e]"
+                                                }`}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${status === "active" ? "bg-emerald-500/20" :
+                                                            status === "complete" ? "bg-emerald-500/20" : "bg-[#1e1e2e]"
+                                                        }`}>
+                                                        {status === "complete" ? "✓" : agent.icon}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className={`font-medium ${status === "active" ? "text-emerald-400" :
+                                                                status === "complete" ? "text-white" : "text-gray-500"
+                                                            }`}>{agent.name}</h4>
+                                                        <p className="text-sm text-gray-500">{agent.desc}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            </div>
+
+                                {singleResult?.verdict && (
+                                    <div className={`p-6 rounded-xl border ${singleResult.verdict === "VALID" ? "border-emerald-500/50 bg-emerald-500/10" :
+                                            singleResult.verdict === "INVALID" ? "border-red-500/50 bg-red-500/10" :
+                                                "border-amber-500/50 bg-amber-500/10"
+                                        }`}>
+                                        <h3 className="text-2xl font-bold mb-2">{singleResult.verdict}</h3>
+                                        {singleResult.judge_reasoning && (
+                                            <p className="text-sm opacity-75">{singleResult.judge_reasoning}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

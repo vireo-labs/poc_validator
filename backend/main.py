@@ -1,13 +1,16 @@
 """
-PoC Validator API
-FastAPI application for validating security vulnerabilities.
+PoC Validator API v2
+FastAPI application with batch Snyk validation support.
 """
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import json
 from datetime import datetime
+import asyncio
+import uuid
 
 from database import engine, Base, SessionLocal
 from models import VulnerabilityReport, ValidationResult, ValidationStatus, VerdictType
@@ -19,19 +22,22 @@ from agents.poc_discoverer import poc_discoverer
 from agents.sandbox_executor import sandbox_executor
 from agents.llm_judge import llm_judge
 
+# Import pipeline
+from services.pipeline import PipelineOrchestrator
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="PoC Validator",
     description="Automatically validate security vulnerabilities by running exploits in sandboxes",
-    version="0.1.0"
+    version="0.2.0"
 )
 
 # CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,16 +75,32 @@ class ValidationStatusResponse(BaseModel):
     completed_at: Optional[str] = None
 
 
-# In-memory store for demo (will use DB in production)
+class BatchJobResponse(BaseModel):
+    job_id: str
+    status: str
+    total_alerts: int
+    unique_vulnerabilities: int
+    message: str
+
+
+class BatchResultResponse(BaseModel):
+    job_id: str
+    status: str
+    progress: dict
+    summary: Optional[dict] = None
+    results: Optional[List[dict]] = None
+
+
+# In-memory stores
 validations = {}
+batch_jobs = {}
 
 
 async def run_validation_pipeline(validation_id: int, report_content: str, source: str, repo_url: str):
-    """Run the full 5-agent validation pipeline."""
+    """Run the full 5-agent validation pipeline for single vulnerability."""
     db = SessionLocal()
     
     try:
-        # Update status helper
         def update_status(status: ValidationStatus, **kwargs):
             validations[validation_id]["status"] = status.value
             validations[validation_id].update(kwargs)
@@ -93,7 +115,7 @@ async def run_validation_pipeline(validation_id: int, report_content: str, sourc
         
         validations[validation_id]["parsed_data"] = parsed["data"]
         
-        # Agent 2: Analyze Code (clones repo and searches actual code)
+        # Agent 2: Analyze Code
         update_status(ValidationStatus.ANALYZING)
         analysis = await code_analyzer.analyze(parsed["data"], repo_url)
         
@@ -103,39 +125,26 @@ async def run_validation_pipeline(validation_id: int, report_content: str, sourc
         
         validations[validation_id]["code_analysis"] = analysis["data"]
         
-        # Check classification to determine if we can auto-exploit
+        # Check if auto-exploitable
         classification = analysis.get("classification", {})
         can_auto_exploit = classification.get("can_auto_exploit", True)
         
-        # If this is a code-pattern-only vulnerability, skip execution
         if not can_auto_exploit:
-            # CODE_VERIFIED verdict - pattern confirmed in source
             if analysis["data"].get("vulnerable_code_exists"):
                 update_status(
                     ValidationStatus.COMPLETED,
                     verdict=VerdictType.CODE_VERIFIED.value,
-                    judge_reasoning=f"Vulnerability pattern confirmed in source code. {analysis['data'].get('explanation', '')} This vulnerability type requires manual exploitation (e.g., compile with ASAN, setup rogue server).",
-                    exploit_name="Code Pattern Verification",
-                    execution_output={
-                        "stdout": f"Pattern matches found: {len(analysis['data'].get('matches', []))}",
-                        "stderr": "",
-                        "exit_code": 0,
-                        "duration_ms": 0,
-                        "exploit_succeeded": None,
-                        "verification_mode": "pattern_only"
-                    },
+                    judge_reasoning=f"Vulnerability pattern confirmed in source code. {analysis['data'].get('explanation', '')}",
                     completed_at=datetime.now().isoformat()
                 )
             else:
                 update_status(
                     ValidationStatus.COMPLETED,
                     verdict=VerdictType.NEEDS_REVIEW.value,
-                    judge_reasoning="Could not confirm vulnerability pattern in source code. Manual review recommended.",
+                    judge_reasoning="Could not confirm vulnerability pattern. Manual review recommended.",
                     completed_at=datetime.now().isoformat()
                 )
             return
-        
-        # Continue with exploit generation and execution for HTTP-exploitable vulns
         
         # Agent 3: Discover PoC
         update_status(ValidationStatus.DISCOVERING)
@@ -146,11 +155,14 @@ async def run_validation_pipeline(validation_id: int, report_content: str, sourc
             return
         
         validations[validation_id]["exploit_name"] = poc["exploit_name"]
-        validations[validation_id]["exploit_code"] = poc["exploit_code"]
         
         # Agent 4: Execute in Sandbox
         update_status(ValidationStatus.EXECUTING)
-        execution = await sandbox_executor.execute(poc["exploit_code"], poc["exploit_name"])
+        execution = await sandbox_executor.execute(
+            poc["exploit_code"], 
+            poc["exploit_name"],
+            language=poc.get("language", "python")
+        )
         
         validations[validation_id]["execution_output"] = {
             "stdout": execution.get("stdout", ""),
@@ -169,8 +181,6 @@ async def run_validation_pipeline(validation_id: int, report_content: str, sourc
                 ValidationStatus.COMPLETED,
                 verdict=judgment["verdict"],
                 judge_reasoning=judgment.get("reasoning"),
-                evidence=judgment.get("evidence", []),
-                recommendations=judgment.get("recommendations", []),
                 completed_at=datetime.now().isoformat()
             )
         else:
@@ -183,23 +193,59 @@ async def run_validation_pipeline(validation_id: int, report_content: str, sourc
         db.close()
 
 
+async def run_batch_validation(job_id: str, snyk_data: dict, project_path: str):
+    """Run validation pipeline for all vulnerabilities in Snyk report."""
+    try:
+        batch_jobs[job_id]["status"] = "running"
+        batch_jobs[job_id]["started_at"] = datetime.now().isoformat()
+        
+        # Initialize orchestrator
+        orchestrator = PipelineOrchestrator(project_path=project_path)
+        
+        # Run validation
+        results = await orchestrator.validate(snyk_data)
+        
+        # Update job with results
+        batch_jobs[job_id]["status"] = "completed"
+        batch_jobs[job_id]["completed_at"] = datetime.now().isoformat()
+        batch_jobs[job_id]["summary"] = {
+            "total_scanned": results["total_scanned"],
+            "unique_validated": results["unique_validated"],
+            "exploitable_count": results["exploitable_count"],
+            "by_verdict": results["by_verdict"]
+        }
+        batch_jobs[job_id]["results"] = results["results"]
+        batch_jobs[job_id]["exploitable"] = results["exploitable"]
+        
+    except Exception as e:
+        batch_jobs[job_id]["status"] = "failed"
+        batch_jobs[job_id]["error"] = str(e)
+
+
 @app.get("/")
 async def root():
     return {
         "name": "PoC Validator API",
-        "version": "0.1.0",
-        "status": "running"
+        "version": "0.2.0",
+        "status": "running",
+        "endpoints": {
+            "single": "/api/validate",
+            "batch": "/api/batch/validate",
+            "health": "/health"
+        }
     }
 
 
+# ============================================================================
+# SINGLE VULNERABILITY VALIDATION
+# ============================================================================
+
 @app.post("/api/validate", response_model=ValidationResponse)
 async def submit_validation(request: SubmitReportRequest, background_tasks: BackgroundTasks):
-    """Submit a vulnerability report for validation."""
+    """Submit a single vulnerability for validation."""
     
-    # Create validation record
     validation_id = len(validations) + 1
     
-    # Build report content
     report_content = f"""
 Title: {request.title}
 Description: {request.description}
@@ -216,10 +262,6 @@ Affected File: {request.affected_file or 'Unknown'}
         "started_at": datetime.now().isoformat()
     }
     
-    # Store repo URL
-    validations[validation_id]["repo_url"] = request.repo_url
-    
-    # Start validation pipeline in background
     background_tasks.add_task(
         run_validation_pipeline,
         validation_id,
@@ -237,7 +279,7 @@ Affected File: {request.affected_file or 'Unknown'}
 
 @app.get("/api/validate/{validation_id}", response_model=ValidationStatusResponse)
 async def get_validation_status(validation_id: int):
-    """Get the status and results of a validation."""
+    """Get the status and results of a single validation."""
     
     if validation_id not in validations:
         raise HTTPException(status_code=404, detail="Validation not found")
@@ -260,7 +302,7 @@ async def get_validation_status(validation_id: int):
 
 @app.get("/api/validations")
 async def list_validations():
-    """List all validations."""
+    """List all single validations."""
     return {
         "validations": [
             {
@@ -274,6 +316,145 @@ async def list_validations():
     }
 
 
+# ============================================================================
+# BATCH SNYK VALIDATION
+# ============================================================================
+
+@app.post("/api/batch/validate", response_model=BatchJobResponse)
+async def submit_batch_validation(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    project_path: str = Form(default="")
+):
+    """
+    Submit a Snyk JSON report for batch validation.
+    
+    - **file**: Snyk JSON export file
+    - **project_path**: Optional path to project with node_modules (for dependency exploits)
+    """
+    
+    # Validate file type
+    if not file.filename.endswith('.json'):
+        raise HTTPException(status_code=400, detail="File must be a JSON file")
+    
+    # Read and parse JSON
+    try:
+        content = await file.read()
+        snyk_data = json.loads(content.decode('utf-8'))
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
+    
+    # Count vulnerabilities
+    vulnerabilities = snyk_data.get("vulnerabilities", [])
+    if not vulnerabilities:
+        raise HTTPException(status_code=400, detail="No vulnerabilities found in Snyk report")
+    
+    # Create job
+    job_id = str(uuid.uuid4())[:8]
+    
+    # Deduplicate by package name
+    unique_packages = set()
+    for v in vulnerabilities:
+        pkg = v.get("packageName", v.get("name", "unknown"))
+        unique_packages.add(pkg)
+    
+    batch_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "pending",
+        "total_alerts": len(vulnerabilities),
+        "unique_vulnerabilities": len(unique_packages),
+        "project_path": project_path,
+        "created_at": datetime.now().isoformat(),
+        "progress": {
+            "completed": 0,
+            "total": len(unique_packages),
+            "current_package": None
+        }
+    }
+    
+    # Start background validation
+    background_tasks.add_task(
+        run_batch_validation,
+        job_id,
+        snyk_data,
+        project_path
+    )
+    
+    return BatchJobResponse(
+        job_id=job_id,
+        status="pending",
+        total_alerts=len(vulnerabilities),
+        unique_vulnerabilities=len(unique_packages),
+        message=f"Batch validation started. Poll /api/batch/{job_id} for status."
+    )
+
+
+@app.get("/api/batch/{job_id}")
+async def get_batch_status(job_id: str):
+    """Get the status and results of a batch validation job."""
+    
+    if job_id not in batch_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    job = batch_jobs[job_id]
+    
+    response = {
+        "job_id": job_id,
+        "status": job["status"],
+        "total_alerts": job["total_alerts"],
+        "unique_vulnerabilities": job["unique_vulnerabilities"],
+        "created_at": job.get("created_at"),
+        "started_at": job.get("started_at"),
+        "completed_at": job.get("completed_at")
+    }
+    
+    if job["status"] == "completed":
+        response["summary"] = job.get("summary", {})
+        response["exploitable"] = job.get("exploitable", [])
+        response["results"] = job.get("results", [])
+    elif job["status"] == "failed":
+        response["error"] = job.get("error")
+    
+    return response
+
+
+@app.get("/api/batch")
+async def list_batch_jobs():
+    """List all batch validation jobs."""
+    return {
+        "jobs": [
+            {
+                "job_id": j["job_id"],
+                "status": j["status"],
+                "total_alerts": j["total_alerts"],
+                "unique_vulnerabilities": j["unique_vulnerabilities"],
+                "created_at": j.get("created_at"),
+                "completed_at": j.get("completed_at")
+            }
+            for j in batch_jobs.values()
+        ]
+    }
+
+
+@app.delete("/api/batch/{job_id}")
+async def delete_batch_job(job_id: str):
+    """Delete a batch validation job."""
+    if job_id not in batch_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    del batch_jobs[job_id]
+    return {"message": "Job deleted"}
+
+
+# ============================================================================
+# HEALTH & UTILITIES
+# ============================================================================
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "version": "0.2.0"}
+
+
 @app.delete("/api/validate/{validation_id}")
 async def delete_validation(validation_id: int):
     """Delete a validation record."""
@@ -282,9 +463,3 @@ async def delete_validation(validation_id: int):
     
     del validations[validation_id]
     return {"message": "Validation deleted"}
-
-
-# Health check
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
