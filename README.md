@@ -61,7 +61,7 @@ Snyk/Semgrep Output
 # Clone the repository
 git clone https://github.com/vireo-labs/poc_validator.git
 cd poc_validator
-git checkout dynamic_v0.1.1
+
 
 # Backend setup
 cd backend
