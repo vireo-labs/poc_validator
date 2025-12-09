@@ -198,12 +198,31 @@ async def run_batch_validation(job_id: str, snyk_data: dict, project_path: str):
     try:
         batch_jobs[job_id]["status"] = "running"
         batch_jobs[job_id]["started_at"] = datetime.now().isoformat()
+        batch_jobs[job_id]["progress"] = {
+            "current": 0,
+            "total": 0,
+            "current_package": None,
+            "completed": []
+        }
         
         # Initialize orchestrator
         orchestrator = PipelineOrchestrator(project_path=project_path)
         
-        # Run validation
-        results = await orchestrator.validate(snyk_data)
+        # Progress callback to update job status
+        def on_progress(current, total, package, verdict, reason):
+            batch_jobs[job_id]["progress"] = {
+                "current": current,
+                "total": total,
+                "current_package": package,
+                "completed": batch_jobs[job_id]["progress"].get("completed", []) + [{
+                    "package": package,
+                    "verdict": verdict,
+                    "reason": reason[:80]
+                }]
+            }
+        
+        # Run validation with progress tracking
+        results = await orchestrator.validate(snyk_data, progress_callback=on_progress)
         
         # Update job with results
         batch_jobs[job_id]["status"] = "completed"
@@ -220,6 +239,7 @@ async def run_batch_validation(job_id: str, snyk_data: dict, project_path: str):
     except Exception as e:
         batch_jobs[job_id]["status"] = "failed"
         batch_jobs[job_id]["error"] = str(e)
+
 
 
 @app.get("/")

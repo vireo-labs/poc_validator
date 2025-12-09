@@ -283,15 +283,61 @@ class PipelineOrchestrator:
             time_ms=int((datetime.now() - start).total_seconds() * 1000)
         )
     
+    async def validate(self, snyk_data: dict, progress_callback=None) -> dict:
+        """
+        Validate all vulnerabilities from Snyk data dict.
+        Used by REST API for uploaded files.
+        
+        Args:
+            snyk_data: Parsed Snyk JSON data
+            progress_callback: Optional callback(current, total, package, verdict, reason)
+        """
+        vulns = parse_snyk_output(snyk_data)
+        
+        # Deduplicate
+        unique_vulns = self.triage.deduplicate(vulns)
+        total = len(unique_vulns)
+        
+        print(f"Validating {total} unique vulnerabilities (from {len(vulns)} total)...")
+        
+        results = []
+        for i, vuln in enumerate(unique_vulns, 1):
+            result = await self.validate_single(vuln)
+            results.append(result)
+            
+            # Progress
+            status = {
+                "exploitable": "[EXPLOIT]",
+                "confirmed": "[CONFIRM]", 
+                "false_positive": "[SAFE]",
+                "needs_review": "[REVIEW]"
+            }.get(result.verdict.value, "[?]")
+            
+            print(f"  [{i}/{total}] {status} {result.package}: {result.reason[:50]}")
+            
+            # Call progress callback if provided
+            if progress_callback:
+                progress_callback(
+                    current=i,
+                    total=total,
+                    package=result.package,
+                    verdict=result.verdict.value,
+                    reason=result.reason[:100]
+                )
+        
+        return self._build_summary(vulns, results)
+
+    
     async def validate_batch(self, snyk_file: str) -> dict:
         """
-        Validate all vulnerabilities from Snyk output.
+        Validate all vulnerabilities from Snyk output file.
         """
         # Load Snyk data
         with open(snyk_file, 'r') as f:
             data = json.load(f)
         
         vulns = parse_snyk_output(data)
+
         
         # Deduplicate
         unique_vulns = self.triage.deduplicate(vulns)
