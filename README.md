@@ -1,10 +1,10 @@
-# PoC Validator v0.1.1
+# PoC Validator v0.1.2
 
 **Automated Security Vulnerability Validation with LLM-Powered Exploit Generation**
 
 PoC Validator automatically validates security scanner alerts by attempting to exploit vulnerabilities in a safe environment. It separates actually exploitable vulnerabilities from false positives.
 
-## What's New in v0.1.1
+## What's New in v0.1.2
 
 - **Larger LLM Model**: Now uses `qwen/qwen3-235b-a22b-2507` for better exploit generation
 - **Skeptical LLM Judge**: Verifies exploit evidence, doesn't blindly trust SUCCESS claims
