@@ -1,0 +1,573 @@
+{
+  "job_id": "79827c9b",
+  "status": "completed",
+  "total_alerts": 76,
+  "unique_vulnerabilities": 32,
+  "created_at": "2025-12-09T23:24:04.779312",
+  "started_at": "2025-12-09T23:24:04.780609",
+  "completed_at": "2025-12-09T23:36:58.815959",
+  "summary": {
+    "total_scanned": 76,
+    "unique_validated": 46,
+    "exploitable_count": 10,
+    "by_verdict": {
+      "false_positive": 33,
+      "needs_review": 3,
+      "exploitable": 10
+    }
+  },
+  "exploitable": [
+    {
+      "package": "express-jwt",
+      "title": "Authorization Bypass",
+      "severity": "HIGH",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "full",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "jsonwebtoken",
+      "title": "Improper Authentication",
+      "severity": "MEDIUM",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "jsonwebtoken",
+      "title": "Improper Restriction of Security Token Assignment",
+      "severity": "MEDIUM",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "jsonwebtoken",
+      "title": "Use of a Broken or Risky Cryptographic Algorithm",
+      "severity": "MEDIUM",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "jsonwebtoken",
+      "title": "Authentication Bypass",
+      "severity": "HIGH",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "full",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "marsdb",
+      "title": "Arbitrary Code Injection",
+      "severity": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "notevil",
+      "title": "Sandbox Bypass",
+      "severity": "MEDIUM",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "vm2",
+      "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
+      "severity": "MEDIUM",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "vm2",
+      "title": "Sandbox Bypass",
+      "severity": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    },
+    {
+      "package": "vm2",
+      "title": "Remote Code Execution (RCE)",
+      "severity": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "strategy": "minimal",
+      "exploit_source": "dependency_library"
+    }
+  ],
+  "results": [
+    {
+      "vuln_id": "SNYK-JS-BRACES-6838727",
+      "package": "braces",
+      "title": "Excessive Platform Resource Consumption within a Loop",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 837
+    },
+    {
+      "vuln_id": "SNYK-JS-COOKIE-8163060",
+      "package": "cookie",
+      "title": "Cross-site Scripting (XSS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 155
+    },
+    {
+      "vuln_id": "SNYK-JS-CRYPTOJS-6028119",
+      "package": "crypto-js",
+      "title": "Use of Weak Hash",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 58490
+    },
+    {
+      "vuln_id": "SNYK-JS-DECOMPRESSTAR-559095",
+      "package": "decompress-tar",
+      "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
+      "severity": "MEDIUM",
+      "verdict": "needs_review",
+      "confidence": 0.6,
+      "reason": "Exploit script encountered error: TypeError:. Cannot determine if target is vulnerable.",
+      "time_ms": 94731
+    },
+    {
+      "vuln_id": "SNYK-JS-EIVINDFJELDSTADDOT-564434",
+      "package": "eivindfjeldstad-dot",
+      "title": "Prototype Pollution",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 14003
+    },
+    {
+      "vuln_id": "SNYK-JS-ENGINEIO-3136336",
+      "package": "engine.io",
+      "title": "Denial of Service (DoS)",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 47258
+    },
+    {
+      "vuln_id": "SNYK-JS-EXPRESSJWT-575022",
+      "package": "express-jwt",
+      "title": "Authorization Bypass",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 162
+    },
+    {
+      "vuln_id": "SNYK-JS-GOT-2932019",
+      "package": "got",
+      "title": "Open Redirect",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 24362
+    },
+    {
+      "vuln_id": "SNYK-JS-HBS-1566555",
+      "package": "hbs",
+      "title": "Information Exposure",
+      "severity": "LOW",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 28533
+    },
+    {
+      "vuln_id": "SNYK-JS-HTTPCACHESEMANTICS-3248783",
+      "package": "http-cache-semantics",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 8874
+    },
+    {
+      "vuln_id": "SNYK-JS-INFLIGHT-6095116",
+      "package": "inflight",
+      "title": "Missing Release of Resource after Effective Lifetime",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 93013
+    },
+    {
+      "vuln_id": "SNYK-JS-IP-12704893",
+      "package": "ip",
+      "title": "Server-side Request Forgery (SSRF)",
+      "severity": "HIGH",
+      "verdict": "needs_review",
+      "confidence": 0.6,
+      "reason": "The output claims 'SUCCESS: SSRF exploit worked' and mentions receiving an 'internal response using octal IP 017700000001', which is an obfuscated localhost (127.0.0.1). This suggests the exploit may have triggered an internal request. However, there is no concrete evidence such as leaked internal data, HTTP response contents, status codes, headers, or timing delays to confirm that the SSRF actually retrieved sensitive information or accessed restricted services. The absence of actual response details makes it impossible to confirm exploitation beyond the script's assertion.",
+      "time_ms": 23256
+    },
+    {
+      "vuln_id": "SNYK-JS-IP-7148531",
+      "package": "ip",
+      "title": "Server-Side Request Forgery (SSRF)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 39323
+    },
+    {
+      "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180022",
+      "package": "jsonwebtoken",
+      "title": "Improper Authentication",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 235
+    },
+    {
+      "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180024",
+      "package": "jsonwebtoken",
+      "title": "Improper Restriction of Security Token Assignment",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 196
+    },
+    {
+      "vuln_id": "SNYK-JS-JSONWEBTOKEN-3180026",
+      "package": "jsonwebtoken",
+      "title": "Use of a Broken or Risky Cryptographic Algorithm",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 149
+    },
+    {
+      "vuln_id": "npm:jsonwebtoken:20150331",
+      "package": "jsonwebtoken",
+      "title": "Authentication Bypass",
+      "severity": "HIGH",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 144
+    },
+    {
+      "vuln_id": "SNYK-JS-LIBXMLJS2-6808810",
+      "package": "libxmljs2",
+      "title": "Type Confusion",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 14362
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASH-1018905",
+      "package": "lodash",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 214
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASH-1040724",
+      "package": "lodash",
+      "title": "Code Injection",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 169
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASH-450202",
+      "package": "lodash",
+      "title": "Prototype Pollution",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 152
+    },
+    {
+      "vuln_id": "SNYK-JS-LODASHSET-1320032",
+      "package": "lodash.set",
+      "title": "Prototype Pollution",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 48508
+    },
+    {
+      "vuln_id": "SNYK-JS-MARSDB-480405",
+      "package": "marsdb",
+      "title": "Arbitrary Code Injection",
+      "severity": "CRITICAL",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 314
+    },
+    {
+      "vuln_id": "SNYK-JS-MESSAGEFORMAT-13109646",
+      "package": "messageformat",
+      "title": "Prototype Pollution",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 13952
+    },
+    {
+      "vuln_id": "SNYK-JS-MICROMATCH-6838728",
+      "package": "micromatch",
+      "title": "Inefficient Regular Expression Complexity",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 20231
+    },
+    {
+      "vuln_id": "SNYK-JS-MOMENT-2440688",
+      "package": "moment",
+      "title": "Directory Traversal",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 162
+    },
+    {
+      "vuln_id": "npm:moment:20160126",
+      "package": "moment",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 143
+    },
+    {
+      "vuln_id": "SNYK-JS-MULTER-10185673",
+      "package": "multer",
+      "title": "Uncaught Exception",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 21391
+    },
+    {
+      "vuln_id": "SNYK-JS-MULTER-10185675",
+      "package": "multer",
+      "title": "Missing Release of Memory after Effective Lifetime",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 14173
+    },
+    {
+      "vuln_id": "SNYK-JS-NOTEVIL-2385946",
+      "package": "notevil",
+      "title": "Sandbox Bypass",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 248
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-1070780",
+      "package": "sanitize-html",
+      "title": "Validation Bypass",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 177
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-1070786",
+      "package": "sanitize-html",
+      "title": "Access Restriction Bypass",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 160
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-2957526",
+      "package": "sanitize-html",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 156
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-585892",
+      "package": "sanitize-html",
+      "title": "Cross-site Scripting (XSS)",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 184
+    },
+    {
+      "vuln_id": "SNYK-JS-SANITIZEHTML-6256334",
+      "package": "sanitize-html",
+      "title": "Information Exposure",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 167
+    },
+    {
+      "vuln_id": "SNYK-JS-SOCKETIO-7278048",
+      "package": "socket.io",
+      "title": "Uncaught Exception",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 15534
+    },
+    {
+      "vuln_id": "SNYK-JS-SOCKETIOPARSER-5596892",
+      "package": "socket.io-parser",
+      "title": "Denial of Service (DoS)",
+      "severity": "HIGH",
+      "verdict": "needs_review",
+      "confidence": 0.6,
+      "reason": "Exploit script encountered error: SyntaxError:. Cannot determine if target is vulnerable.",
+      "time_ms": 16284
+    },
+    {
+      "vuln_id": "SNYK-JS-TAR-6476909",
+      "package": "tar",
+      "title": "Uncontrolled Resource Consumption ('Resource Exhaustion')",
+      "severity": "MEDIUM",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 25962
+    },
+    {
+      "vuln_id": "SNYK-JS-UNSETVALUE-2400660",
+      "package": "unset-value",
+      "title": "Prototype Pollution",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 43069
+    },
+    {
+      "vuln_id": "SNYK-JS-VM2-5537079",
+      "package": "vm2",
+      "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
+      "severity": "MEDIUM",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 220
+    },
+    {
+      "vuln_id": "SNYK-JS-VM2-5537100",
+      "package": "vm2",
+      "title": "Sandbox Bypass",
+      "severity": "CRITICAL",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 162
+    },
+    {
+      "vuln_id": "SNYK-JS-VM2-5772823",
+      "package": "vm2",
+      "title": "Remote Code Execution (RCE)",
+      "severity": "CRITICAL",
+      "verdict": "exploitable",
+      "confidence": 0.95,
+      "reason": "Exploit confirmed vulnerability with concrete evidence",
+      "time_ms": 188
+    },
+    {
+      "vuln_id": "SNYK-JS-WEB3-174533",
+      "package": "web3",
+      "title": "Insecure Credential Storage",
+      "severity": "LOW",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 11192
+    },
+    {
+      "vuln_id": "SNYK-JS-WS-7266574",
+      "package": "ws",
+      "title": "Denial of Service (DoS)",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 34991
+    },
+    {
+      "vuln_id": "npm:base64url:20180511",
+      "package": "base64url",
+      "title": "Uninitialized Memory Exposure",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 44725
+    },
+    {
+      "vuln_id": "npm:jws:20160726",
+      "package": "jws",
+      "title": "Forgeable Public/Private Tokens",
+      "severity": "HIGH",
+      "verdict": "false_positive",
+      "confidence": 0.9,
+      "reason": "Exploit was blocked - vulnerability patched or mitigated",
+      "time_ms": 13097
+    }
+  ]
+}

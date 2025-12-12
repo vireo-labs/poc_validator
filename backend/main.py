@@ -93,7 +93,33 @@ class BatchResultResponse(BaseModel):
 
 # In-memory stores
 validations = {}
-batch_jobs = {}
+
+# Persistence for batch jobs
+import os
+BATCH_JOBS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "batch_jobs.json")
+
+def load_batch_jobs() -> dict:
+    """Load batch jobs from file on startup."""
+    if os.path.exists(BATCH_JOBS_FILE):
+        try:
+            with open(BATCH_JOBS_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
+    return {}
+
+def save_batch_jobs():
+    """Save batch jobs to file for persistence."""
+    try:
+        with open(BATCH_JOBS_FILE, 'w') as f:
+            json.dump(batch_jobs, f, indent=2, default=str)
+    except IOError as e:
+        print(f"Warning: Could not save batch jobs: {e}")
+
+# Load existing jobs on startup
+batch_jobs = load_batch_jobs()
+print(f"[Startup] Loaded {len(batch_jobs)} batch job(s) from disk")
+
 
 
 async def run_validation_pipeline(validation_id: int, report_content: str, source: str, repo_url: str):
@@ -198,31 +224,12 @@ async def run_batch_validation(job_id: str, snyk_data: dict, project_path: str):
     try:
         batch_jobs[job_id]["status"] = "running"
         batch_jobs[job_id]["started_at"] = datetime.now().isoformat()
-        batch_jobs[job_id]["progress"] = {
-            "current": 0,
-            "total": 0,
-            "current_package": None,
-            "completed": []
-        }
         
         # Initialize orchestrator
         orchestrator = PipelineOrchestrator(project_path=project_path)
         
-        # Progress callback to update job status
-        def on_progress(current, total, package, verdict, reason):
-            batch_jobs[job_id]["progress"] = {
-                "current": current,
-                "total": total,
-                "current_package": package,
-                "completed": batch_jobs[job_id]["progress"].get("completed", []) + [{
-                    "package": package,
-                    "verdict": verdict,
-                    "reason": reason[:80]
-                }]
-            }
-        
-        # Run validation with progress tracking
-        results = await orchestrator.validate(snyk_data, progress_callback=on_progress)
+        # Run validation
+        results = await orchestrator.validate(snyk_data)
         
         # Update job with results
         batch_jobs[job_id]["status"] = "completed"
@@ -236,9 +243,13 @@ async def run_batch_validation(job_id: str, snyk_data: dict, project_path: str):
         batch_jobs[job_id]["results"] = results["results"]
         batch_jobs[job_id]["exploitable"] = results["exploitable"]
         
+        # Save to disk for persistence
+        save_batch_jobs()
+        
     except Exception as e:
         batch_jobs[job_id]["status"] = "failed"
         batch_jobs[job_id]["error"] = str(e)
+        save_batch_jobs()  # Save even on failure
 
 
 
@@ -449,11 +460,15 @@ async def list_batch_jobs():
                 "total_alerts": j["total_alerts"],
                 "unique_vulnerabilities": j["unique_vulnerabilities"],
                 "created_at": j.get("created_at"),
-                "completed_at": j.get("completed_at")
+                "completed_at": j.get("completed_at"),
+                "summary": j.get("summary"),
+                "exploitable": j.get("exploitable", []),
+                "error": j.get("error")
             }
             for j in batch_jobs.values()
         ]
     }
+
 
 
 @app.delete("/api/batch/{job_id}")

@@ -31,16 +31,6 @@ interface BatchResult {
     status: BatchStatus;
     total_alerts: number;
     unique_vulnerabilities: number;
-    progress?: {
-        current: number;
-        total: number;
-        current_package: string | null;
-        completed: Array<{
-            package: string;
-            verdict: string;
-            reason: string;
-        }>;
-    };
     summary?: {
         exploitable_count: number;
         by_verdict: Record<string, number>;
@@ -58,7 +48,6 @@ interface BatchResult {
     }>;
     error?: string;
 }
-
 
 const AGENTS = [
     { key: "PARSING", icon: "📄", name: "Report Parser", desc: "Extracting vulnerability details" },
@@ -275,8 +264,8 @@ export default function ValidatePage() {
                     <button
                         onClick={() => setMode("batch")}
                         className={`px-6 py-3 rounded-lg font-medium transition-all ${mode === "batch"
-                            ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
-                            : "bg-[#1e1e2e] text-gray-400 hover:text-white"
+                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                                : "bg-[#1e1e2e] text-gray-400 hover:text-white"
                             }`}
                     >
                         📁 Batch Upload (Snyk JSON)
@@ -284,8 +273,8 @@ export default function ValidatePage() {
                     <button
                         onClick={() => setMode("single")}
                         className={`px-6 py-3 rounded-lg font-medium transition-all ${mode === "single"
-                            ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
-                            : "bg-[#1e1e2e] text-gray-400 hover:text-white"
+                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                                : "bg-[#1e1e2e] text-gray-400 hover:text-white"
                             }`}
                     >
                         📝 Single Vulnerability
@@ -306,8 +295,8 @@ export default function ValidatePage() {
                                         onDrop={handleFileDrop}
                                         onDragOver={(e) => e.preventDefault()}
                                         className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${file
-                                            ? "border-emerald-500/50 bg-emerald-500/5"
-                                            : "border-[#2e2e4e] hover:border-emerald-500/30"
+                                                ? "border-emerald-500/50 bg-emerald-500/5"
+                                                : "border-[#2e2e4e] hover:border-emerald-500/30"
                                             }`}
                                     >
                                         {file ? (
@@ -447,10 +436,10 @@ export default function ValidatePage() {
                                     <div className="space-y-6">
                                         {/* Status Card */}
                                         <div className={`p-6 rounded-xl border ${batchResult.status === "completed"
-                                            ? "border-emerald-500/50 bg-emerald-500/5"
-                                            : batchResult.status === "failed"
-                                                ? "border-red-500/50 bg-red-500/5"
-                                                : "border-[#2e2e4e] bg-[#111118]"
+                                                ? "border-emerald-500/50 bg-emerald-500/5"
+                                                : batchResult.status === "failed"
+                                                    ? "border-red-500/50 bg-red-500/5"
+                                                    : "border-[#2e2e4e] bg-[#111118]"
                                             }`}>
                                             <div className="flex items-center justify-between mb-4">
                                                 <div>
@@ -458,12 +447,12 @@ export default function ValidatePage() {
                                                     <p className="text-white font-mono">{batchResult.job_id}</p>
                                                 </div>
                                                 <div className={`px-3 py-1 rounded-full text-sm ${batchResult.status === "completed"
-                                                    ? "bg-emerald-500/20 text-emerald-400"
-                                                    : batchResult.status === "running"
-                                                        ? "bg-amber-500/20 text-amber-400"
-                                                        : batchResult.status === "failed"
-                                                            ? "bg-red-500/20 text-red-400"
-                                                            : "bg-gray-500/20 text-gray-400"
+                                                        ? "bg-emerald-500/20 text-emerald-400"
+                                                        : batchResult.status === "running"
+                                                            ? "bg-amber-500/20 text-amber-400"
+                                                            : batchResult.status === "failed"
+                                                                ? "bg-red-500/20 text-red-400"
+                                                                : "bg-gray-500/20 text-gray-400"
                                                     }`}>
                                                     {batchResult.status === "running" && (
                                                         <span className="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse mr-2"></span>
@@ -484,60 +473,7 @@ export default function ValidatePage() {
                                             </div>
                                         </div>
 
-                                        {/* Progress Bar - shown while running */}
-                                        {batchResult.status === "running" && batchResult.progress && (
-                                            <div className="p-6 rounded-xl border border-amber-500/30 bg-amber-500/5">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h3 className="text-lg font-bold text-amber-400">Validating...</h3>
-                                                    <span className="text-amber-400 font-mono">
-                                                        {batchResult.progress.current} / {batchResult.progress.total}
-                                                    </span>
-                                                </div>
-
-                                                {/* Progress Bar */}
-                                                <div className="w-full bg-[#1e1e2e] rounded-full h-3 mb-4">
-                                                    <div
-                                                        className="bg-gradient-to-r from-amber-500 to-emerald-500 h-3 rounded-full transition-all duration-300"
-                                                        style={{ width: `${(batchResult.progress.current / batchResult.progress.total) * 100}%` }}
-                                                    />
-                                                </div>
-
-                                                {/* Current Package */}
-                                                {batchResult.progress.current_package && (
-                                                    <div className="flex items-center gap-2 mb-4">
-                                                        <svg className="animate-spin w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                                        </svg>
-                                                        <span className="text-gray-400">Currently testing:</span>
-                                                        <span className="text-white font-medium">{batchResult.progress.current_package}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* Completed Items */}
-                                                {batchResult.progress.completed && batchResult.progress.completed.length > 0 && (
-                                                    <div className="max-h-48 overflow-y-auto space-y-1">
-                                                        {batchResult.progress.completed.slice(-8).reverse().map((item, i) => (
-                                                            <div key={i} className="flex items-center gap-2 text-sm p-2 bg-black/20 rounded">
-                                                                <span className={
-                                                                    item.verdict === "exploitable" ? "text-red-400" :
-                                                                        item.verdict === "false_positive" ? "text-emerald-400" :
-                                                                            "text-amber-400"
-                                                                }>
-                                                                    {item.verdict === "exploitable" ? "🔴" :
-                                                                        item.verdict === "false_positive" ? "🟢" : "🟡"}
-                                                                </span>
-                                                                <span className="text-white font-medium">{item.package}</span>
-                                                                <span className="text-gray-500 text-xs truncate flex-1">{item.reason}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
                                         {/* Summary */}
-
                                         {batchResult.summary && (
                                             <div className="p-6 rounded-xl border border-[#2e2e4e] bg-[#111118]">
                                                 <h3 className="text-lg font-bold text-white mb-4">Summary</h3>
@@ -567,8 +503,8 @@ export default function ValidatePage() {
                                                         <div key={i} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
                                                             <div>
                                                                 <span className={`text-xs px-2 py-0.5 rounded mr-2 ${item.severity === "CRITICAL" ? "bg-red-500 text-white" :
-                                                                    item.severity === "HIGH" ? "bg-orange-500 text-white" :
-                                                                        "bg-yellow-500 text-black"
+                                                                        item.severity === "HIGH" ? "bg-orange-500 text-white" :
+                                                                            "bg-yellow-500 text-black"
                                                                     }`}>
                                                                     {item.severity}
                                                                 </span>
@@ -604,18 +540,18 @@ export default function ValidatePage() {
                                         const status = getAgentStatus(agent.key);
                                         return (
                                             <div key={i} className={`p-4 rounded-xl border transition-all ${status === "active" ? "bg-emerald-500/10 border-emerald-500/50" :
-                                                status === "complete" ? "bg-[#111118] border-emerald-500/30" :
-                                                    "bg-[#111118] border-[#1e1e2e]"
+                                                    status === "complete" ? "bg-[#111118] border-emerald-500/30" :
+                                                        "bg-[#111118] border-[#1e1e2e]"
                                                 }`}>
                                                 <div className="flex items-center gap-4">
                                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${status === "active" ? "bg-emerald-500/20" :
-                                                        status === "complete" ? "bg-emerald-500/20" : "bg-[#1e1e2e]"
+                                                            status === "complete" ? "bg-emerald-500/20" : "bg-[#1e1e2e]"
                                                         }`}>
                                                         {status === "complete" ? "✓" : agent.icon}
                                                     </div>
                                                     <div>
                                                         <h4 className={`font-medium ${status === "active" ? "text-emerald-400" :
-                                                            status === "complete" ? "text-white" : "text-gray-500"
+                                                                status === "complete" ? "text-white" : "text-gray-500"
                                                             }`}>{agent.name}</h4>
                                                         <p className="text-sm text-gray-500">{agent.desc}</p>
                                                     </div>
@@ -627,8 +563,8 @@ export default function ValidatePage() {
 
                                 {singleResult?.verdict && (
                                     <div className={`p-6 rounded-xl border ${singleResult.verdict === "VALID" ? "border-emerald-500/50 bg-emerald-500/10" :
-                                        singleResult.verdict === "INVALID" ? "border-red-500/50 bg-red-500/10" :
-                                            "border-amber-500/50 bg-amber-500/10"
+                                            singleResult.verdict === "INVALID" ? "border-red-500/50 bg-red-500/10" :
+                                                "border-amber-500/50 bg-amber-500/10"
                                         }`}>
                                         <h3 className="text-2xl font-bold mb-2">{singleResult.verdict}</h3>
                                         {singleResult.judge_reasoning && (

@@ -1,0 +1,3387 @@
+{
+  "vulnerabilities": [
+    {
+      "id": "SNYK-JS-LODASH-1018905",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P",
+      "credit": [
+        "Liyuan Chen"
+      ],
+      "semver": {
+        "vulnerable": [
+          "<4.17.21"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "4.17.21"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "medium",
+      "cvssScore": 5.3,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "lodash",
+      "references": [
+        {
+          "url": "https://github.com/lodash/lodash/commit/c4847ebe7d14540bb28a8b932a9ce1b9ecbfee1a",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/lodash/lodash/pull/5065",
+          "title": "GitHub Fix PR"
+        }
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "NVD",
+          "severity": "medium",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+          "cvssV3BaseScore": 5.3,
+          "modificationTime": "2024-03-11T09:51:35.916317Z"
+        },
+        {
+          "assigner": "Red Hat",
+          "severity": "medium",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+          "cvssV3BaseScore": 5.3,
+          "modificationTime": "2024-03-11T09:53:48.045177Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P",
+          "assigner": "Snyk",
+          "severity": "medium",
+          "baseScore": 5.3,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-06-13T13:26:35.874158Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+          "assigner": "NVD",
+          "severity": "medium",
+          "baseScore": 5.3,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:51:35.916317Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+          "assigner": "Red Hat",
+          "severity": "medium",
+          "baseScore": 5.3,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:53:48.045177Z"
+        }
+      ],
+      "description": "## Overview\n[lodash](https://www.npmjs.com/package/lodash) is a modern JavaScript utility library delivering modularity, performance, & extras.\n\nAffected versions of this package are vulnerable to Regular Expression Denial of Service (ReDoS) via the `toNumber`, `trim` and `trimEnd` functions.\r\n\r\n### POC\r\n```\r\nvar lo = require('lodash');\r\n\r\nfunction build_blank (n) {\r\nvar ret = \"1\"\r\nfor (var i = 0; i < n; i++) {\r\nret += \" \"\r\n}\r\n\r\nreturn ret + \"1\";\r\n}\r\n\r\nvar s = build_blank(50000)\r\nvar time0 = Date.now();\r\nlo.trim(s)\r\nvar time_cost0 = Date.now() - time0;\r\nconsole.log(\"time_cost0: \" + time_cost0)\r\n\r\nvar time1 = Date.now();\r\nlo.toNumber(s)\r\nvar time_cost1 = Date.now() - time1;\r\nconsole.log(\"time_cost1: \" + time_cost1)\r\n\r\nvar time2 = Date.now();\r\nlo.trimEnd(s)\r\nvar time_cost2 = Date.now() - time2;\r\nconsole.log(\"time_cost2: \" + time_cost2)\r\n```\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its original and legitimate users. There are many types of DoS attacks, ranging from trying to clog the network pipes to the system by generating a large volume of traffic from many machines (a Distributed Denial of Service - DDoS - attack) to sending crafted requests that cause a system to crash or take a disproportional amount of time to process.\n\nThe Regular expression Denial of Service (ReDoS) is a type of Denial of Service attack. Regular expressions are incredibly powerful, but they aren't very intuitive and can ultimately end up making it easy for attackers to take your site down.\n\nLet\u2019s take the following regular expression as an example:\n```js\nregex = /A(B|C+)+D/\n```\n\nThis regular expression accomplishes the following:\n- `A` The string must start with the letter 'A'\n- `(B|C+)+` The string must then follow the letter A with either the letter 'B' or some number of occurrences of the letter 'C' (the `+` matches one or more times). The `+` at the end of this section states that we can look for one or more matches of this section.\n- `D` Finally, we ensure this section of the string ends with a 'D'\n\nThe expression would match inputs such as `ABBD`, `ABCCCCD`, `ABCBCCCD` and `ACCCCCD`\n\nIt most cases, it doesn't take very long for a regex engine to find a match:\n\n```bash\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCD\")'\n0.04s user 0.01s system 95% cpu 0.052 total\n\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCX\")'\n1.79s user 0.02s system 99% cpu 1.812 total\n```\n\nThe entire process of testing it against a 30 characters long string takes around ~52ms. But when given an invalid string, it takes nearly two seconds to complete the test, over ten times as long as it took to test a valid string. The dramatic difference is due to the way regular expressions get evaluated.\n\nMost Regex engines will work very similarly (with minor differences). The engine will match the first possible way to accept the current character and proceed to the next one. If it then fails to match the next one, it will backtrack and see if there was another way to digest the previous character. If it goes too far down the rabbit hole only to find out the string doesn\u2019t match in the end, and if many characters have multiple valid regex paths, the number of backtracking steps can become very large, resulting in what is known as _catastrophic backtracking_.\n\nLet's look at how our expression runs into this problem, using a shorter string: \"ACCCX\". While it seems fairly straightforward, there are still four different ways that the engine could match those three C's:\n1. CCC\n2. CC+C\n3. C+CC\n4. C+C+C.\n\nThe engine has to try each of those combinations to see if any of them potentially match against the expression. When you combine that with the other steps the engine must take, we can use [RegEx 101 debugger](https://regex101.com/debugger) to see the engine has to take a total of 38 steps before it can determine the string doesn't match.\n\nFrom there, the number of steps the engine must use to validate a string just continues to grow.\n\n| String | Number of C's | Number of steps |\n| -------|-------------:| -----:|\n| ACCCX | 3 | 38\n| ACCCCX | 4 | 71\n| ACCCCCX | 5 | 136\n| ACCCCCCCCCCCCCCX | 14 | 65,553\n\n\nBy the time the string includes 14 C's, the engine has to take over 65,000 steps just to see if the string is valid. These extreme situations can cause them to work very slowly (exponentially related to input size, as shown above), allowing an attacker to exploit this and can cause the service to excessively consume CPU, resulting in a Denial of Service.\n\n## Remediation\nUpgrade `lodash` to version 4.17.21 or higher.\n## References\n- [GitHub Commit](https://github.com/lodash/lodash/commit/c4847ebe7d14540bb28a8b932a9ce1b9ecbfee1a)\n- [GitHub Fix PR](https://github.com/lodash/lodash/pull/5065)\n",
+      "epssDetails": {
+        "percentile": "0.24766",
+        "probability": "0.00084",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-28500"
+        ],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "packageName": "lodash",
+      "proprietary": true,
+      "creationTime": "2020-10-16T16:48:40.985673Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2020-10-16T16:47:34Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2021-02-15T11:50:49Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-06-13T13:26:35.874158Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "medium",
+      "from": [
+        "juice-shop@19.1.1",
+        "sanitize-html@1.4.2",
+        "lodash@2.4.2"
+      ],
+      "upgradePath": [
+        false,
+        "sanitize-html@1.7.1"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "lodash",
+      "version": "2.4.2",
+      "__filename": "/Users/varunkaleeswaranbalasubramani/Documents/startup_fridr/poc_validator/scanner_data/juice-shop/node_modules/sanitize-html/node_modules/lodash/package.json",
+      "parentDepType": "prod"
+    },
+    {
+      "id": "SNYK-JS-MOMENT-2440688",
+      "title": "Directory Traversal",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "credit": [
+        "Unknown"
+      ],
+      "semver": {
+        "vulnerable": [
+          "<2.29.2"
+        ]
+      },
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.29.2"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": "This vulnerability is only applicable when the user-provided locale name is not sanitized before it has been used."
+      },
+      "language": "js",
+      "severity": "high",
+      "cvssScore": 7.5,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "moment",
+      "references": [
+        {
+          "url": "https://github.com/moment/moment/commit/4211bfc8f15746be4019bba557e29a7ba83d54c5",
+          "title": "GitHub Commit"
+        }
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "NVD",
+          "severity": "high",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+          "cvssV3BaseScore": 7.5,
+          "modificationTime": "2024-03-11T09:49:13.115980Z"
+        },
+        {
+          "assigner": "Red Hat",
+          "severity": "high",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+          "cvssV3BaseScore": 7.5,
+          "modificationTime": "2024-03-11T09:53:59.336348Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-06T13:56:27.815354Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+          "assigner": "NVD",
+          "severity": "high",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:49:13.115980Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+          "assigner": "Red Hat",
+          "severity": "high",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:53:59.336348Z"
+        }
+      ],
+      "description": "## Overview\n[moment](https://www.npmjs.com/package/moment) is a lightweight JavaScript date library for parsing, validating, manipulating, and formatting dates.\n\nAffected versions of this package are vulnerable to Directory Traversal when a user provides a locale string which is directly used to switch moment locale.\n\n## Details\n\nA Directory Traversal attack (also known as path traversal) aims to access files and directories that are stored outside the intended folder. By manipulating files with \"dot-dot-slash (../)\" sequences and its variations, or by using absolute file paths, it may be possible to access arbitrary files and directories stored on file system, including application source code, configuration, and other critical system files.\n\nDirectory Traversal vulnerabilities can be generally divided into two types:\n\n- **Information Disclosure**: Allows the attacker to gain information about the folder structure or read the contents of sensitive files on the system.\n\n`st` is a module for serving static files on web pages, and contains a [vulnerability of this type](https://snyk.io/vuln/npm:st:20140206). In our example, we will serve files from the `public` route.\n\nIf an attacker requests the following URL from our server, it will in turn leak the sensitive private key of the root user.\n\n```\ncurl http://localhost:8080/public/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/root/.ssh/id_rsa\n```\n**Note** `%2e` is the URL encoded version of `.` (dot).\n\n- **Writing arbitrary files**: Allows the attacker to create or replace existing files. This type of vulnerability is also known as `Zip-Slip`. \n\nOne way to achieve this is by using a malicious `zip` archive that holds path traversal filenames. When each filename in the zip archive gets concatenated to the target extraction folder, without validation, the final path ends up outside of the target folder. If an executable or a configuration file is overwritten with a file containing malicious code, the problem can turn into an arbitrary code execution issue quite easily.\n\nThe following is an example of a `zip` archive with one benign file and one malicious file. Extracting the malicious file will result in traversing out of the target folder, ending up in `/root/.ssh/` overwriting the `authorized_keys` file:\n\n```\n2018-04-15 22:04:29 .....           19           19  good.txt\n2018-04-15 22:04:42 .....           20           20  ../../../../../../root/.ssh/authorized_keys\n```\n\n## Remediation\nUpgrade `moment` to version 2.29.2 or higher.\n## References\n- [GitHub Commit](https://github.com/moment/moment/commit/4211bfc8f15746be4019bba557e29a7ba83d54c5)\n",
+      "epssDetails": {
+        "percentile": "0.75627",
+        "probability": "0.00940",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2022-24785"
+        ],
+        "CWE": [
+          "CWE-22"
+        ],
+        "GHSA": [
+          "GHSA-8hfj-j24r-96c4"
+        ]
+      },
+      "packageName": "moment",
+      "proprietary": false,
+      "creationTime": "2022-04-05T08:46:07.677588Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2022-04-05T08:39:23Z",
+      "exploitDetails": {
+        "sources": [],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Not Defined",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Not Defined",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2022-04-05T12:30:50.878091Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-03-11T09:53:59.336348Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "high",
+      "from": [
+        "juice-shop@19.1.1",
+        "express-jwt@0.1.3",
+        "jsonwebtoken@0.1.0",
+        "moment@2.0.0"
+      ],
+      "upgradePath": [
+        false,
+        "express-jwt@3.0.0",
+        "jsonwebtoken@5.7.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "moment",
+      "version": "2.0.0",
+      "__filename": "/Users/varunkaleeswaranbalasubramani/Documents/startup_fridr/poc_validator/scanner_data/juice-shop/node_modules/express-jwt/node_modules/moment/package.json",
+      "parentDepType": "prod"
+    },
+    {
+      "id": "SNYK-JS-NOTEVIL-2385946",
+      "title": "Sandbox Bypass",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+      "credit": [
+        "Cristian-Alexandru Staicu",
+        "Abdullah Alhamdan"
+      ],
+      "semver": {
+        "vulnerable": [
+          "*"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "medium",
+      "cvssScore": 6.5,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "notevil",
+      "references": [],
+      "cvssDetails": [
+        {
+          "assigner": "NVD",
+          "severity": "medium",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+          "cvssV3BaseScore": 6.5,
+          "modificationTime": "2024-03-11T09:49:30.708028Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+          "assigner": "Snyk",
+          "severity": "medium",
+          "baseScore": 6.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-06T14:01:18.159656Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+          "assigner": "NVD",
+          "severity": "medium",
+          "baseScore": 6.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:49:30.708028Z"
+        }
+      ],
+      "description": "## Overview\n[notevil](https://www.npmjs.com/package/notevil) is a module uses esprima to parse the javascript AST then walks each node and evaluates the result\r\n**Note:**This package has been deprecated.\n\nAffected versions of this package are vulnerable to Sandbox Bypass. It is vulnerable to Sandbox Escape leading to Prototype pollution. The package fails to restrict access to the main context, allowing an attacker to add or modify an object's prototype.\r\n\r\n**Note:**  This vulnerability derives from an incomplete fix in [SNYK-JS-NOTEVIL-608878](https://security.snyk.io/vuln/SNYK-JS-NOTEVIL-608878).\r\n\r\n## PoC:\r\n```js\r\nvar safeEval = require('notevil')\r\n\r\nsafeEval(`  \r\nObject.defineProperty(({})[[\"__proto__\"]][[\"__proto__\"]], 'polluted', {\r\n  value: 'success'\r\n});`);\r\n\r\nconsole.log(polluted);\r\n```\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of \u201cpath\u201d, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype\u2014 use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Oliver. \u201cJavaScript prototype pollution attack in NodeJS application.\u201d GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `notevil`.\n",
+      "epssDetails": {
+        "percentile": "0.53277",
+        "probability": "0.00304",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2021-23771"
+        ],
+        "CWE": [
+          "CWE-1321",
+          "CWE-265"
+        ]
+      },
+      "packageName": "notevil",
+      "proprietary": true,
+      "creationTime": "2022-01-27T15:00:51.139678Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2022-01-27T15:00:48Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2022-02-14T16:21:53.819915Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-03-11T09:49:30.708028Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "medium",
+      "from": [
+        "juice-shop@19.1.1",
+        "notevil@1.3.3"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "notevil",
+      "version": "1.3.3",
+      "__filename": "/Users/varunkaleeswaranbalasubramani/Documents/startup_fridr/poc_validator/scanner_data/juice-shop/node_modules/notevil/package.json",
+      "parentDepType": "prod"
+    },
+    {
+      "id": "SNYK-JS-SOCKETIO-7278048",
+      "title": "Uncaught Exception",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "credit": [
+        "Paul Taylor"
+      ],
+      "semver": {
+        "vulnerable": [
+          ">=2.3.0 <2.5.1",
+          ">=3.0.0 <4.6.2"
+        ]
+      },
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.5.1",
+        "4.6.2"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "high",
+      "cvssScore": 8.7,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "socket.io",
+      "references": [
+        {
+          "url": "https://github.com/socketio/socket.io/commit/15af22fc22bc6030fcead322c106f07640336115",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/socketio/socket.io/commit/d30630ba10562bf987f4d2b42440fc41a828119c",
+          "title": "GitHub Commit"
+        }
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "SUSE",
+          "severity": "high",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+          "cvssV3BaseScore": 7.5,
+          "modificationTime": "2024-10-30T11:03:52.699601Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 8.7,
+          "cvssVersion": "4.0",
+          "modificationTime": "2024-06-20T06:22:00.788948Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+          "assigner": "Snyk",
+          "severity": "high",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-06-20T06:22:00.788948Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+          "assigner": "SUSE",
+          "severity": "high",
+          "baseScore": 7.5,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-10-30T11:03:52.699601Z"
+        }
+      ],
+      "description": "## Overview\n[socket.io](https://github.com/socketio/socket.io) is a node.js realtime framework server.\n\nAffected versions of this package are vulnerable to Uncaught Exception in handling error events. If there is no listener set up for such events, an attacker can send packets containing them to crash the Node process. \r\n\r\n## Workaround\r\n\r\nThis vulnerability can be avoided by attaching a listener for error events, such as\r\n```\r\nio.on(\"connection\", (socket) => {\r\n  socket.on(\"error\", () => {\r\n    // ...\r\n  });\r\n});\r\n```\n## Remediation\nUpgrade `socket.io` to version 2.5.1, 4.6.2 or higher.\n## References\n- [GitHub Commit](https://github.com/socketio/socket.io/commit/15af22fc22bc6030fcead322c106f07640336115)\n- [GitHub Commit](https://github.com/socketio/socket.io/commit/d30630ba10562bf987f4d2b42440fc41a828119c)\n",
+      "epssDetails": {
+        "percentile": "0.34051",
+        "probability": "0.00136",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2024-38355"
+        ],
+        "CWE": [
+          "CWE-248"
+        ],
+        "GHSA": [
+          "GHSA-25hc-qcg6-38wj"
+        ]
+      },
+      "packageName": "socket.io",
+      "proprietary": false,
+      "creationTime": "2024-06-20T06:07:57.738611Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2024-06-19T20:40:57Z",
+      "exploitDetails": {
+        "sources": [],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Not Defined",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Not Defined",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2024-06-20T06:22:00.788616Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-10-30T11:03:52.699601Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "high",
+      "from": [
+        "juice-shop@19.1.1",
+        "socket.io@3.1.2"
+      ],
+      "upgradePath": [
+        false,
+        "socket.io@4.6.2"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "socket.io",
+      "version": "3.1.2",
+      "__filename": "/Users/varunkaleeswaranbalasubramani/Documents/startup_fridr/poc_validator/scanner_data/juice-shop/node_modules/socket.io/package.json",
+      "parentDepType": "prod"
+    },
+    {
+      "id": "SNYK-JS-VM2-5537079",
+      "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N/E:P",
+      "credit": [
+        "Takeshi Kaneko"
+      ],
+      "semver": {
+        "vulnerable": [
+          "<3.9.18"
+        ]
+      },
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "3.9.18"
+      ],
+      "patches": [],
+      "insights": {
+        "triageAdvice": null
+      },
+      "language": "js",
+      "severity": "medium",
+      "cvssScore": 5.3,
+      "functions": [],
+      "malicious": false,
+      "isDisputed": false,
+      "moduleName": "vm2",
+      "references": [
+        {
+          "url": "https://github.com/patriksimek/vm2/commit/5206ba25afd86ef547a2c9d48d46ca7a9e6ec238",
+          "title": "GitHub Commit"
+        },
+        {
+          "url": "https://github.com/patriksimek/vm2/releases/tag/3.9.18",
+          "title": "GitHub Release"
+        },
+        {
+          "url": "https://gist.github.com/arkark/c1c57eaf3e0a649af1a70c2b93b17550",
+          "title": "PoC"
+        }
+      ],
+      "cvssDetails": [
+        {
+          "assigner": "NVD",
+          "severity": "medium",
+          "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+          "cvssV3BaseScore": 5.3,
+          "modificationTime": "2024-03-11T09:53:15.875083Z"
+        }
+      ],
+      "cvssSources": [
+        {
+          "type": "primary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N/E:P",
+          "assigner": "Snyk",
+          "severity": "medium",
+          "baseScore": 5.3,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-06T13:56:59.541484Z"
+        },
+        {
+          "type": "secondary",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+          "assigner": "NVD",
+          "severity": "medium",
+          "baseScore": 5.3,
+          "cvssVersion": "3.1",
+          "modificationTime": "2024-03-11T09:53:15.875083Z"
+        }
+      ],
+      "description": "## Overview\n[vm2](https://github.com/patriksimek/vm2#readme) is a sandbox that can run untrusted code with whitelisted Node's built-in modules.\n\nAffected versions of this package are vulnerable to Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection') via the `inspect` method of `vm.js`, which allows `write` permissions. \r\nExploiting this vulnerability allows an attacker to edit options for the `console.log` command.\r\n\r\n## Workaround\r\nUsers unable to upgrade may make the `inspect` method `readonly` with `vm.readonly(inspect)` after creating a VM.\n## Remediation\nUpgrade `vm2` to version 3.9.18 or higher.\n## References\n- [GitHub Commit](https://github.com/patriksimek/vm2/commit/5206ba25afd86ef547a2c9d48d46ca7a9e6ec238)\n- [GitHub Release](https://github.com/patriksimek/vm2/releases/tag/3.9.18)\n- [PoC](https://gist.github.com/arkark/c1c57eaf3e0a649af1a70c2b93b17550)\n",
+      "epssDetails": {
+        "percentile": "0.65182",
+        "probability": "0.00500",
+        "modelVersion": "v2025.03.14"
+      },
+      "identifiers": {
+        "CVE": [
+          "CVE-2023-32313"
+        ],
+        "CWE": [
+          "CWE-74"
+        ],
+        "GHSA": [
+          "GHSA-p5gc-c584-jj6v"
+        ]
+      },
+      "packageName": "vm2",
+      "proprietary": false,
+      "creationTime": "2023-05-16T08:07:30.028918Z",
+      "functions_new": [],
+      "alternativeIds": [],
+      "disclosureTime": "2023-05-16T07:52:13Z",
+      "exploitDetails": {
+        "sources": [
+          "Snyk"
+        ],
+        "maturityLevels": [
+          {
+            "type": "secondary",
+            "level": "Proof of Concept",
+            "format": "CVSSv3"
+          },
+          {
+            "type": "primary",
+            "level": "Proof of Concept",
+            "format": "CVSSv4"
+          }
+        ]
+      },
+      "packageManager": "npm",
+      "publicationTime": "2023-05-16T08:18:20.099998Z",
+      "severityBasedOn": "CVSS",
+      "modificationTime": "2024-03-11T09:53:15.875083Z",
+      "socialTrendAlert": false,
+      "severityWithCritical": "medium",
+      "from": [
+        "juice-shop@19.1.1",
+        "juicy-chat-bot@0.9.0",
+        "vm2@3.9.17"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "vm2",
+      "version": "3.9.17",
+      "__filename": "/Users/varunkaleeswaranbalasubramani/Documents/startup_fridr/poc_validator/scanner_data/juice-shop/node_modules/vm2/package.json",
+      "parentDepType": "prod"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 984,
+  "org": "rizzlerwithnorizz",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.25.1\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": {
+    "severities": {},
+    "orgLicenseRules": {
+      "AGPL-1.0": {
+        "licenseType": "AGPL-1.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "AGPL-3.0": {
+        "licenseType": "AGPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "Artistic-1.0": {
+        "licenseType": "Artistic-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "Artistic-2.0": {
+        "licenseType": "Artistic-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CDDL-1.0": {
+        "licenseType": "CDDL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CPOL-1.02": {
+        "licenseType": "CPOL-1.02",
+        "severity": "high",
+        "instructions": ""
+      },
+      "EPL-1.0": {
+        "licenseType": "EPL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "GPL-2.0": {
+        "licenseType": "GPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "GPL-3.0": {
+        "licenseType": "GPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "LGPL-2.0": {
+        "licenseType": "LGPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-2.1": {
+        "licenseType": "LGPL-2.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-3.0": {
+        "licenseType": "LGPL-3.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-1.1": {
+        "licenseType": "MPL-1.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-2.0": {
+        "licenseType": "MPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MS-RL": {
+        "licenseType": "MS-RL",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "SimPL-2.0": {
+        "licenseType": "SimPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      }
+    }
+  },
+  "packageManager": "npm",
+  "ignoreSettings": {
+    "adminOnly": false,
+    "reasonRequired": false,
+    "disregardFilesystemIgnores": false
+  },
+  "summary": "76 vulnerable dependency paths",
+  "remediation": {
+    "unresolved": [
+      {
+        "id": "SNYK-JS-DECOMPRESSTAR-559095",
+        "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N/E:P/RL:U/RC:C",
+        "credit": [
+          "Oscar Arnflo"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.3,
+        "functions": [
+          {
+            "version": [
+              "*"
+            ],
+            "functionId": {
+              "filePath": "index.js",
+              "className": null,
+              "functionName": "module.exports"
+            }
+          }
+        ],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "decompress-tar",
+        "references": [
+          {
+            "url": "https://github.com/kevva/decompress/pull/73",
+            "title": "GitHub Fix PR"
+          },
+          {
+            "url": "https://github.com/kevva/decompress/issues/71",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://github.com/kevva/decompress-tar/pull/12",
+            "title": "GitHub PR decompress-tar"
+          },
+          {
+            "url": "https://www.npmjs.com/advisories/1217",
+            "title": "NPM Advisory"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "cvssV3BaseScore": 9.8,
+            "modificationTime": "2024-03-11T09:50:22.598107Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N/E:P/RL:U/RC:C",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T14:00:51.927791Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:50:22.598107Z"
+          }
+        ],
+        "description": "## Overview\n[decompress-tar](https://github.com/kevva/decompress-tar) is a tar plugin for decompress.\n\nAffected versions of this package are vulnerable to Arbitrary File Write via Archive Extraction (Zip Slip). It is possible to bypass the security measures provided by decompress  and conduct ZIP path traversal through symlinks.\r\n\r\n### PoC\r\n\r\n```\r\nconst decompress = require('decompress');\r\n\r\ndecompress('slip.tar.gz', 'dist').then(files => {\r\n\tconsole.log('done!');\r\n});\r\n```\n\n## Details\n\nIt is exploited using a specially crafted zip archive, that holds path traversal filenames. When exploited, a filename in a malicious archive is concatenated to the target extraction directory, which results in the final path ending up outside of the target folder. For instance, a zip may hold a file with a \"../../file.exe\" location and thus break out of the target folder. If an executable or a configuration file is overwritten with a file containing malicious code, the problem can turn into an arbitrary code execution issue quite easily.\n\nThe following is an example of a zip archive with one benign file and one malicious file. Extracting the malicous file will result in traversing out of the target folder, ending up in `/root/.ssh/` overwriting the `authorized_keys` file:\n\n```\n\n+2018-04-15 22:04:29 ..... 19 19 good.txt\n\n+2018-04-15 22:04:42 ..... 20 20 ../../../../../../root/.ssh/authorized_keys\n\n```\n\n## Remediation\nThere is no fixed version for `decompress-tar`.\n## References\n- [GitHub Fix PR](https://github.com/kevva/decompress/pull/73)\n- [GitHub Issue](https://github.com/kevva/decompress/issues/71)\n- [GitHub PR decompress-tar](https://github.com/kevva/decompress-tar/pull/12)\n- [NPM Advisory](https://www.npmjs.com/advisories/1217)\n",
+        "epssDetails": {
+          "percentile": "0.72137",
+          "probability": "0.00737",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2020-12265"
+          ],
+          "CWE": [
+            "CWE-29"
+          ],
+          "NSP": [
+            "1217"
+          ],
+          "GHSA": [
+            "GHSA-qgfr-5hqp-vrw9"
+          ]
+        },
+        "packageName": "decompress-tar",
+        "proprietary": false,
+        "creationTime": "2020-03-02T11:17:35.161853Z",
+        "functions_new": [
+          {
+            "version": [
+              "*"
+            ],
+            "functionId": {
+              "filePath": "index.js",
+              "functionName": "module.exports"
+            }
+          }
+        ],
+        "alternativeIds": [],
+        "disclosureTime": "2019-10-15T20:29:24Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2020-02-27T13:28:41Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:50:22.598107Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "download@8.0.0",
+          "decompress@4.2.1",
+          "decompress-targz@4.1.1",
+          "decompress-tar@4.1.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "decompress-tar",
+        "version": "4.1.1",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-EIVINDFJELDSTADDOT-564434",
+        "title": "Prototype Pollution",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:L/A:L/E:P/RL:O/RC:C",
+        "credit": [
+          "JHU System Security Lab"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 4.2,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "eivindfjeldstad-dot",
+        "references": [
+          {
+            "url": "https://github.com/eivindfjeldstad/dot/commit/774e4b0c97ca35d2ae40df2cd14428d37dd07a0b",
+            "title": "GitHub Commit"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "cvssV3BaseScore": 5.3,
+            "modificationTime": "2024-03-11T09:51:08.791834Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:L/A:L/E:P/RL:O/RC:C",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 4.2,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T13:57:22.274981Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "assigner": "NVD",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:51:08.791834Z"
+          }
+        ],
+        "description": "## Overview\n[eivindfjeldstad-dot](https://www.npmjs.com/package/eivindfjeldstad-dot) is a module that Gets and sets object properties with dot notation.\r\n\r\n**Note:** this package has been deprecated and moved into `@eivifj/dot`.\n\nAffected versions of this package are vulnerable to Prototype Pollution. The function `set` could be tricked into adding or modifying properties of `Object.prototype` using a `__proto__` payload.\r\n\r\n## PoC\r\n```\r\nvar a = require(\"eivindfjeldstad-dot\")\r\nvar path = \"__proto__.toString\";\r\na.set({},path,\"JHU\");\r\nconsole.log({}.toString);\r\n```\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its original and legitimate users. There are many types of DoS attacks, ranging from trying to clog the network pipes to the system by generating a large volume of traffic from many machines (a Distributed Denial of Service - DDoS - attack) to sending crafted requests that cause a system to crash or take a disproportional amount of time to process.\n\nThe Regular expression Denial of Service (ReDoS) is a type of Denial of Service attack. Regular expressions are incredibly powerful, but they aren't very intuitive and can ultimately end up making it easy for attackers to take your site down.\n\nLet\u2019s take the following regular expression as an example:\n```js\nregex = /A(B|C+)+D/\n```\n\nThis regular expression accomplishes the following:\n- `A` The string must start with the letter 'A'\n- `(B|C+)+` The string must then follow the letter A with either the letter 'B' or some number of occurrences of the letter 'C' (the `+` matches one or more times). The `+` at the end of this section states that we can look for one or more matches of this section.\n- `D` Finally, we ensure this section of the string ends with a 'D'\n\nThe expression would match inputs such as `ABBD`, `ABCCCCD`, `ABCBCCCD` and `ACCCCCD`\n\nIt most cases, it doesn't take very long for a regex engine to find a match:\n\n```bash\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCD\")'\n0.04s user 0.01s system 95% cpu 0.052 total\n\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCX\")'\n1.79s user 0.02s system 99% cpu 1.812 total\n```\n\nThe entire process of testing it against a 30 characters long string takes around ~52ms. But when given an invalid string, it takes nearly two seconds to complete the test, over ten times as long as it took to test a valid string. The dramatic difference is due to the way regular expressions get evaluated.\n\nMost Regex engines will work very similarly (with minor differences). The engine will match the first possible way to accept the current character and proceed to the next one. If it then fails to match the next one, it will backtrack and see if there was another way to digest the previous character. If it goes too far down the rabbit hole only to find out the string doesn\u2019t match in the end, and if many characters have multiple valid regex paths, the number of backtracking steps can become very large, resulting in what is known as _catastrophic backtracking_.\n\nLet's look at how our expression runs into this problem, using a shorter string: \"ACCCX\". While it seems fairly straightforward, there are still four different ways that the engine could match those three C's:\n1. CCC\n2. CC+C\n3. C+CC\n4. C+C+C.\n\nThe engine has to try each of those combinations to see if any of them potentially match against the expression. When you combine that with the other steps the engine must take, we can use [RegEx 101 debugger](https://regex101.com/debugger) to see the engine has to take a total of 38 steps before it can determine the string doesn't match.\n\nFrom there, the number of steps the engine must use to validate a string just continues to grow.\n\n| String | Number of C's | Number of steps |\n| -------|-------------:| -----:|\n| ACCCX | 3 | 38\n| ACCCCX | 4 | 71\n| ACCCCCX | 5 | 136\n| ACCCCCCCCCCCCCCX | 14 | 65,553\n\n\nBy the time the string includes 14 C's, the engine has to take over 65,000 steps just to see if the string is valid. These extreme situations can cause them to work very slowly (exponentially related to input size, as shown above), allowing an attacker to exploit this and can cause the service to excessively consume CPU, resulting in a Denial of Service.\n\n## Remediation\nThere is no fixed version for `eivindfjeldstad-dot`.\n## References\n- [GitHub Commit](https://github.com/eivindfjeldstad/dot/commit/774e4b0c97ca35d2ae40df2cd14428d37dd07a0b)\n",
+        "epssDetails": {
+          "percentile": "0.55045",
+          "probability": "0.00326",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2020-7639"
+          ],
+          "CWE": [
+            "CWE-1321"
+          ]
+        },
+        "packageName": "eivindfjeldstad-dot",
+        "proprietary": true,
+        "creationTime": "2020-04-05T14:48:43.897856Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2020-04-05T00:00:00Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2020-04-05T00:00:00Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:51:08.791834Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 98,
+        "from": [
+          "juice-shop@19.1.1",
+          "yaml-schema-validator@1.2.3",
+          "validate@4.5.1",
+          "eivindfjeldstad-dot@0.0.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "eivindfjeldstad-dot",
+        "version": "0.0.1",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-GOT-2932019",
+        "title": "Open Redirect",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<11.8.5",
+            ">=12.0.0 <12.1.0"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "11.8.5",
+          "12.1.0"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 5.4,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "got",
+        "references": [
+          {
+            "url": "https://github.com/sindresorhus/got/compare/v12.0.3...v12.1.0",
+            "title": "GitHub Diff"
+          },
+          {
+            "url": "https://github.com/sindresorhus/got/pull/2047",
+            "title": "GitHub PR"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "cvssV3BaseScore": 5.3,
+            "modificationTime": "2024-03-11T09:49:40.538405Z"
+          },
+          {
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "cvssV3BaseScore": 5.3,
+            "modificationTime": "2024-03-11T09:53:59.174248Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 5.4,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T13:55:26.874968Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "assigner": "NVD",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:49:40.538405Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:59.174248Z"
+          }
+        ],
+        "description": "## Overview\n\nAffected versions of this package are vulnerable to Open Redirect due to missing verification of requested URLs. It allowed a victim to be redirected to a UNIX socket.\n## Remediation\nUpgrade `got` to version 11.8.5, 12.1.0 or higher.\n## References\n- [GitHub Diff](https://github.com/sindresorhus/got/compare/v12.0.3...v12.1.0)\n- [GitHub PR](https://github.com/sindresorhus/got/pull/2047)\n",
+        "epssDetails": {
+          "percentile": "0.73190",
+          "probability": "0.00788",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2022-33987"
+          ],
+          "CWE": [
+            "CWE-601"
+          ]
+        },
+        "packageName": "got",
+        "proprietary": false,
+        "creationTime": "2022-06-19T09:23:24.210132Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2022-06-19T08:33:16Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2022-06-19T15:33:44.269688Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:53:59.174248Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "download@8.0.0",
+          "got@8.3.2"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "got",
+        "version": "8.3.2",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-HBS-1566555",
+        "title": "Information Exposure",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N/E:P",
+        "credit": [
+          "Agustin Gianni"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "low",
+        "cvssScore": 3.4,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "hbs",
+        "references": [
+          {
+            "url": "https://securitylab.github.com/advisories/GHSL-2021-020-pillarjs-hbs/",
+            "title": "PoC and Explanation"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+            "cvssV3BaseScore": 5.3,
+            "modificationTime": "2024-03-11T09:50:48.662388Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N/E:P",
+            "assigner": "Snyk",
+            "severity": "low",
+            "baseScore": 3.4,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T14:04:06.258873Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+            "assigner": "NVD",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:50:48.662388Z"
+          }
+        ],
+        "description": "## Overview\n[hbs](https://www.npmjs.org/package/hbs) is an Express.js template engine plugin for Handlebars\n\nAffected versions of this package are vulnerable to Information Exposure. `hbs` mixes pure template data with engine configuration options through the `Express` render API. By overwriting internal configuration options a file disclosure vulnerability may be triggered in downstream applications.\n## Remediation\nThere is no fixed version for `hbs`.\n## References\n- [PoC and Explanation](https://securitylab.github.com/advisories/GHSL-2021-020-pillarjs-hbs/)\n",
+        "epssDetails": {
+          "percentile": "0.52863",
+          "probability": "0.00299",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2021-32822"
+          ],
+          "CWE": [
+            "CWE-200"
+          ],
+          "GHSL": [
+            "GHSL-2021-020"
+          ]
+        },
+        "packageName": "hbs",
+        "proprietary": false,
+        "creationTime": "2021-08-17T11:02:48.815315Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2021-08-17T10:50:41Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2021-08-17T14:14:00.465869Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:50:48.662388Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "hbs@4.2.0"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "hbs",
+        "version": "4.2.0",
+        "severityWithCritical": "low"
+      },
+      {
+        "id": "SNYK-JS-HTTPCACHESEMANTICS-3248783",
+        "title": "Regular Expression Denial of Service (ReDoS)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P",
+        "credit": [
+          "Carter Snook"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<4.1.1"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "4.1.1"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 5.3,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "http-cache-semantics",
+        "references": [
+          {
+            "url": "https://github.com/kornelski/http-cache-semantics/commit/560b2d8ef452bbba20ffed69dc155d63ac757b74",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/kornelski/http-cache-semantics/blob/master/index.js%23L83",
+            "title": "Vulnerable Code"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2024-03-11T09:52:46.291686Z"
+          },
+          {
+            "assigner": "Red Hat",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2024-03-11T09:53:59.788609Z"
+          },
+          {
+            "assigner": "SUSE",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2024-03-11T09:53:08.951745Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-02-16T14:02:23.374199Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "NVD",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:52:46.291686Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "Red Hat",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:59.788609Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "SUSE",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:08.951745Z"
+          }
+        ],
+        "description": "## Overview\n\nAffected versions of this package are vulnerable to Regular Expression Denial of Service (ReDoS). The issue can be exploited via malicious request header values sent to a server, when that server reads the cache policy from the request using this library.\n## PoC\nRun the following script in Node.js after installing the `http-cache-semantics` NPM package:\r\n\r\n```js\r\nconst CachePolicy = require(\"http-cache-semantics\");\r\n\r\nfor (let i = 0; i <= 5; i++) {\r\n\r\nconst attack = \"a\" + \" \".repeat(i * 7000) +\r\n\"z\";\r\n\r\nconst start = performance.now();\r\nnew CachePolicy({\r\nheaders: {},\r\n}, {\r\nheaders: {\r\n\"cache-control\": attack,\r\n},\r\n\r\n\r\n});\r\nconsole.log(`${attack.length}: ${performance.now() - start}ms`);\r\n}\r\n```\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its original and legitimate users. There are many types of DoS attacks, ranging from trying to clog the network pipes to the system by generating a large volume of traffic from many machines (a Distributed Denial of Service - DDoS - attack) to sending crafted requests that cause a system to crash or take a disproportional amount of time to process.\n\nThe Regular expression Denial of Service (ReDoS) is a type of Denial of Service attack. Regular expressions are incredibly powerful, but they aren't very intuitive and can ultimately end up making it easy for attackers to take your site down.\n\nLet\u2019s take the following regular expression as an example:\n```js\nregex = /A(B|C+)+D/\n```\n\nThis regular expression accomplishes the following:\n- `A` The string must start with the letter 'A'\n- `(B|C+)+` The string must then follow the letter A with either the letter 'B' or some number of occurrences of the letter 'C' (the `+` matches one or more times). The `+` at the end of this section states that we can look for one or more matches of this section.\n- `D` Finally, we ensure this section of the string ends with a 'D'\n\nThe expression would match inputs such as `ABBD`, `ABCCCCD`, `ABCBCCCD` and `ACCCCCD`\n\nIt most cases, it doesn't take very long for a regex engine to find a match:\n\n```bash\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCD\")'\n0.04s user 0.01s system 95% cpu 0.052 total\n\n$ time node -e '/A(B|C+)+D/.test(\"ACCCCCCCCCCCCCCCCCCCCCCCCCCCCX\")'\n1.79s user 0.02s system 99% cpu 1.812 total\n```\n\nThe entire process of testing it against a 30 characters long string takes around ~52ms. But when given an invalid string, it takes nearly two seconds to complete the test, over ten times as long as it took to test a valid string. The dramatic difference is due to the way regular expressions get evaluated.\n\nMost Regex engines will work very similarly (with minor differences). The engine will match the first possible way to accept the current character and proceed to the next one. If it then fails to match the next one, it will backtrack and see if there was another way to digest the previous character. If it goes too far down the rabbit hole only to find out the string doesn\u2019t match in the end, and if many characters have multiple valid regex paths, the number of backtracking steps can become very large, resulting in what is known as _catastrophic backtracking_.\n\nLet's look at how our expression runs into this problem, using a shorter string: \"ACCCX\". While it seems fairly straightforward, there are still four different ways that the engine could match those three C's:\n1. CCC\n2. CC+C\n3. C+CC\n4. C+C+C.\n\nThe engine has to try each of those combinations to see if any of them potentially match against the expression. When you combine that with the other steps the engine must take, we can use [RegEx 101 debugger](https://regex101.com/debugger) to see the engine has to take a total of 38 steps before it can determine the string doesn't match.\n\nFrom there, the number of steps the engine must use to validate a string just continues to grow.\n\n| String | Number of C's | Number of steps |\n| -------|-------------:| -----:|\n| ACCCX | 3 | 38\n| ACCCCX | 4 | 71\n| ACCCCCX | 5 | 136\n| ACCCCCCCCCCCCCCX | 14 | 65,553\n\n\nBy the time the string includes 14 C's, the engine has to take over 65,000 steps just to see if the string is valid. These extreme situations can cause them to work very slowly (exponentially related to input size, as shown above), allowing an attacker to exploit this and can cause the service to excessively consume CPU, resulting in a Denial of Service.\n\n## Remediation\nUpgrade `http-cache-semantics` to version 4.1.1 or higher.\n## References\n- [GitHub Commit](https://github.com/kornelski/http-cache-semantics/commit/560b2d8ef452bbba20ffed69dc155d63ac757b74)\n- [Vulnerable Code](https://github.com/kornelski/http-cache-semantics/blob/master/index.js#L83)\n",
+        "epssDetails": {
+          "percentile": "0.38609",
+          "probability": "0.00169",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2022-25881"
+          ],
+          "CWE": [
+            "CWE-1333"
+          ],
+          "GHSA": [
+            "GHSA-8x6c-cv3v-vp6g",
+            "GHSA-rc47-6667-2j5j"
+          ]
+        },
+        "packageName": "http-cache-semantics",
+        "proprietary": true,
+        "creationTime": "2023-01-26T15:43:26.870465Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-01-26T15:40:19Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-01-30T14:39:52.807542Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2025-02-16T14:02:23.374199Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "download@8.0.0",
+          "got@8.3.2",
+          "cacheable-request@2.1.4",
+          "http-cache-semantics@3.8.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "http-cache-semantics",
+        "version": "3.8.1",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-IP-12704893",
+        "title": "Server-side Request Forgery (SSRF)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:L/E:P",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 7.9,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "ip",
+        "references": [
+          {
+            "url": "https://github.com/indutny/node-ip/issues/160",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://cosmosofcyberspace.github.io/CVE-Application-Document.html",
+            "title": "Security Report"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "low",
+            "cvssV3Vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:L/A:N",
+            "cvssV3BaseScore": 3.2,
+            "modificationTime": "2025-09-17T17:33:25.769932Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:H/SA:L/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.9,
+            "cvssVersion": "4.0",
+            "modificationTime": "2025-11-26T18:21:03.045835Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:L/E:P",
+            "assigner": "Snyk",
+            "severity": "critical",
+            "baseScore": 10,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-11-26T18:21:03.045835Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:L/A:N",
+            "assigner": "Red Hat",
+            "severity": "low",
+            "baseScore": 3.2,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-09-17T17:33:25.769932Z"
+          }
+        ],
+        "description": "## Overview\n[ip](https://github.com/indutny/node-ip) is a Node library.\n\nAffected versions of this package are vulnerable to Server-side Request Forgery (SSRF) via the `ip.isPublic()` and `ip.isPrivate()` functions. An attacker can interact with internal network resources by supplying specially crafted IP address such as octal localhost format (\"017700000001\") that is incorrectly identified as public.\r\n\r\n**Note:**\r\n\r\nThis issue exists because of an incomplete fix for CVE-2024-29415.\n## PoC\nTest octal localhost bypass:\r\n  \r\n`node -e \"const ip=require('ip'); console.log('017700000001 bypass:', ip.isPublic('017700000001'));\"` - returns `true`\n## Remediation\nThere is no fixed version for `ip`.\n## References\n- [GitHub Issue](https://github.com/indutny/node-ip/issues/160)\n- [Security Report](https://cosmosofcyberspace.github.io/CVE-Application-Document.html)\n",
+        "epssDetails": {
+          "percentile": "0.03651",
+          "probability": "0.00018",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2025-59436"
+          ],
+          "CWE": [
+            "CWE-918"
+          ]
+        },
+        "packageName": "ip",
+        "proprietary": false,
+        "creationTime": "2025-09-16T11:05:36.475343Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2025-09-16T02:44:59Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2025-09-16T17:54:26.511100Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2025-11-26T18:21:03.045835Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "express-ipfilter@1.3.2",
+          "ip@2.0.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "ip",
+        "version": "2.0.1",
+        "severityWithCritical": "high"
+      },
+      {
+        "id": "SNYK-JS-IP-12761655",
+        "title": "Server-side Request Forgery (SSRF)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:L/E:P",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 7.9,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "ip",
+        "references": [
+          {
+            "url": "https://github.com/indutny/node-ip/issues/160",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://cosmosofcyberspace.github.io/CVE-Application-Document.html",
+            "title": "Security Report"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:H/SA:L/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.9,
+            "cvssVersion": "4.0",
+            "modificationTime": "2025-11-26T18:20:45.121276Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:L/E:P",
+            "assigner": "Snyk",
+            "severity": "critical",
+            "baseScore": 10,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-11-26T18:20:45.121276Z"
+          }
+        ],
+        "description": "## Overview\n[ip](https://github.com/indutny/node-ip) is a Node library.\n\nAffected versions of this package are vulnerable to Server-side Request Forgery (SSRF) via the `ip.isPublic()` and `ip.isPrivate()` functions. An attacker can interact with internal network resources by supplying specially crafted IP address such as null route (\"0\") that is being incorrectly identified as public. \r\n\r\n**Note:**\r\nThis issue exists because of an incomplete fix for CVE-2024-29415.\r\n\r\nExploit is only possible if the application and operating system interpret connection attempts to `0` or `0.0.0.0` as connections to `127.0.0.1`.\n## PoC\nTest null route bypass:\r\n\r\n`node -e \"const ip=require('ip'); console.log('0 bypass:', ip.isPublic('0'));\"` - returns `true`\n## Remediation\nThere is no fixed version for `ip`.\n## References\n- [GitHub Issue](https://github.com/indutny/node-ip/issues/160)\n- [Security Report](https://cosmosofcyberspace.github.io/CVE-Application-Document.html)\n",
+        "epssDetails": {
+          "percentile": "0.03651",
+          "probability": "0.00018",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2025-59437"
+          ],
+          "CWE": [
+            "CWE-918"
+          ]
+        },
+        "packageName": "ip",
+        "proprietary": false,
+        "creationTime": "2025-09-16T16:34:42.744934Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2025-09-16T02:44:58Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2025-09-16T16:34:42.992033Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2025-11-26T18:20:45.121276Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "express-ipfilter@1.3.2",
+          "ip@2.0.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "ip",
+        "version": "2.0.1",
+        "severityWithCritical": "high"
+      },
+      {
+        "id": "SNYK-JS-IP-7148531",
+        "title": "Server-Side Request Forgery (SSRF)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+        "credit": [
+          "ouuan"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.5,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "ip",
+        "references": [
+          {
+            "url": "https://github.com/indutny/node-ip/pull/144/commits/934fadee0080b9d201df95a3f7eead6c46e94017",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/indutny/node-ip/pull/144/commits/94f82bd4f2bace0c228bbbfe70073a71536fcbdf",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/indutny/node-ip/pull/144/commits/aeea96e445164c72607a9043e37bcc7bc8786ec9",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/indutny/node-ip/issues/150",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://github.com/indutny/node-ip/pull/143",
+            "title": "GitHub PR"
+          },
+          {
+            "url": "https://github.com/indutny/node-ip/pull/144",
+            "title": "GitHub PR"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "cvssV3BaseScore": 9.8,
+            "modificationTime": "2024-06-03T15:17:37.353649Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-06-06T12:41:40.856637Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "Red Hat",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-06-03T15:17:37.353649Z"
+          }
+        ],
+        "description": "## Overview\n[ip](https://github.com/indutny/node-ip) is a Node library.\n\nAffected versions of this package are vulnerable to Server-Side Request Forgery (SSRF) via the `isPublic` function, which identifies some private IP addresses as public addresses due to improper parsing of the input.\r\nAn attacker can manipulate a system that uses `isLoopback()`, `isPrivate()` and `isPublic` functions to guard outgoing network requests to treat certain IP addresses as globally routable by supplying specially crafted IP addresses.\r\n\r\n**Note**\r\n\r\nThis vulnerability derived from an incomplete fix for [CVE-2023-42282](https://security.snyk.io/vuln/SNYK-JS-IP-6240864)\n## Remediation\nThere is no fixed version for `ip`.\n## References\n- [GitHub Commit](https://github.com/indutny/node-ip/pull/144/commits/934fadee0080b9d201df95a3f7eead6c46e94017)\n- [GitHub Commit](https://github.com/indutny/node-ip/pull/144/commits/94f82bd4f2bace0c228bbbfe70073a71536fcbdf)\n- [GitHub Commit](https://github.com/indutny/node-ip/pull/144/commits/aeea96e445164c72607a9043e37bcc7bc8786ec9)\n- [GitHub Issue](https://github.com/indutny/node-ip/issues/150)\n- [GitHub PR](https://github.com/indutny/node-ip/pull/143)\n- [GitHub PR](https://github.com/indutny/node-ip/pull/144)\n",
+        "epssDetails": {
+          "percentile": "0.87923",
+          "probability": "0.03916",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2024-29415"
+          ],
+          "CWE": [
+            "CWE-918"
+          ]
+        },
+        "packageName": "ip",
+        "proprietary": false,
+        "creationTime": "2024-05-28T07:31:24.271080Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2024-05-27T20:40:21Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2024-05-28T08:06:24.160153Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-06-06T12:41:40.856637Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "express-ipfilter@1.3.2",
+          "ip@2.0.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "ip",
+        "version": "2.0.1",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-LIBXMLJS2-6808810",
+        "title": "Type Confusion",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+        "credit": [
+          "Uriya Yavnieli"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 8.1,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "libxmljs2",
+        "references": [
+          {
+            "url": "https://github.com/marudor/libxmljs2/issues/204",
+            "title": "GitHub Issue"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.1,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-06-02T08:09:07.427550Z"
+          }
+        ],
+        "description": "## Overview\n[libxmljs2](https://www.npmjs.org/package/libxmljs2) is a libxml bindings for v8 javascript engine\n\nAffected versions of this package are vulnerable to Type Confusion due to the improper handling of a specially crafted XML file. An attacker can cause a denial of service, data leak, infinite loop, or execute arbitrary code by invoking a function on the result of `attrs()` that was called on a parsed node.\n## PoC\n```js\n\nconst libxmljs2 = require('libxmljs2');\n\nvar d = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE note\n[\n<!ENTITY writer `\" + 'A'.repeat(0x1234) + `\">\n]>\n<from>&writer;</from>\n`;\n\nt = libxmljs2.parseXml(d, {flags: [libxmljs2.XMLParseFlags.XML_PARSE_HUGE]})\nfrom = t.get('//from')\nc = from.childNodes()[0]\nc2 = c.childNodes()[0]\nc2_attrs = c2.attrs()\n```\n## Remediation\nThere is no fixed version for `libxmljs2`.\n\n## References\n- [GitHub Issue](https://github.com/marudor/libxmljs2/issues/204)\n",
+        "epssDetails": {
+          "percentile": "0.86710",
+          "probability": "0.03260",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2024-34393"
+          ],
+          "CWE": [
+            "CWE-843"
+          ],
+          "GHSA": [
+            "GHSA-mjr4-7xg5-pfvh"
+          ]
+        },
+        "packageName": "libxmljs2",
+        "proprietary": false,
+        "creationTime": "2024-05-05T10:25:25.434709Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2024-05-02T21:30:29Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2024-05-05T10:25:25.625355Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2025-06-02T08:09:07.427550Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 98,
+        "from": [
+          "juice-shop@19.1.1",
+          "libxmljs2@0.37.0"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "libxmljs2",
+        "version": "0.37.0",
+        "severityWithCritical": "high"
+      },
+      {
+        "id": "SNYK-JS-LIBXMLJS2-6808816",
+        "title": "Type Confusion",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 8.1,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "libxmljs2",
+        "references": [
+          {
+            "url": "https://github.com/marudor/libxmljs2/issues/205",
+            "title": "GitHub Issue"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.1,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-06-02T08:10:05.171208Z"
+          }
+        ],
+        "description": "## Overview\n[libxmljs2](https://www.npmjs.org/package/libxmljs2) is a libxml bindings for v8 javascript engine\n\nAffected versions of this package are vulnerable to Type Confusion when parsing a specially crafted XML while invoking the namespaces() function (which invokes `XmlNode::get_local_namespaces()`) on a grand-child of a node that refers to an entity. \r\n\r\nExploiting this vulnerability leads to an RCE, data leak DoS on 64-bit and 32-bit systems.\n## PoC\n```js\r\n\r\nconst libxmljs2 = require('libxmljs2');\r\n\r\nvar d = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<!DOCTYPE note\r\n[\r\n<!ENTITY writer PUBLIC \"` + \"A\".repeat(8) + \"B\".repeat(8) + \"C\".repeat(8) + \"D\".repeat(8) + \"P\".repeat(8) + `\" \"JFrog Security\">\r\n]>\r\n<from>&writer;</from>\r\n`;\r\n\r\nt = libxmljs2.parseXml(d)\r\nfrom = t.get('//from')\r\nc = from.childNodes()[0]\r\nc2 = c.childNodes()[0] //entity_decl\r\nn = c2.namespaces(true) //onlyLocal = true\r\n\r\n```\n## Remediation\nThere is no fixed version for `libxmljs2`.\n\n## References\n- [GitHub Issue](https://github.com/marudor/libxmljs2/issues/205)\n",
+        "epssDetails": {
+          "percentile": "0.86710",
+          "probability": "0.03260",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2024-34394"
+          ],
+          "CWE": [
+            "CWE-843"
+          ],
+          "GHSA": [
+            "GHSA-78h3-pg4x-j8cv"
+          ]
+        },
+        "packageName": "libxmljs2",
+        "proprietary": false,
+        "creationTime": "2024-05-05T10:34:09.176601Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2024-05-02T21:30:29Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2024-05-05T10:34:09.367934Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2025-06-02T08:10:05.171208Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 98,
+        "from": [
+          "juice-shop@19.1.1",
+          "libxmljs2@0.37.0"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "libxmljs2",
+        "version": "0.37.0",
+        "severityWithCritical": "high"
+      },
+      {
+        "id": "SNYK-JS-LODASHSET-1320032",
+        "title": "Prototype Pollution",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L/E:P/RL:O/RC:C",
+        "credit": [
+          "awarau"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 7.3,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "lodash.set",
+        "references": [
+          {
+            "url": "https://hackerone.com/reports/864701",
+            "title": "HackerOne Report"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L/E:P/RL:O/RC:C",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-04-15T16:31:58.604260Z"
+          }
+        ],
+        "description": "## Overview\n[lodash.set](https://www.npmjs.com/package/lodash.set) is a lodash method _.set exported as a Node.js module.\n\nAffected versions of this package are vulnerable to Prototype Pollution via the `set` and `setwith` functions due to improper user input sanitization.\n\n**Note**\r\n\r\n`lodash.set` is not maintained for a long time. It is recommended to use `lodash` library, which contains the fix since version 4.17.17.\n\n## PoC\n```js\r\nlod = require('lodash')\r\nlod.set({}, \"__proto__[test2]\", \"456\")\r\nconsole.log(Object.prototype)\r\n```\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of \u201cpath\u201d, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype\u2014 use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Oliver. \u201cJavaScript prototype pollution attack in NodeJS application.\u201d GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `lodash.set`.\n## References\n- [HackerOne Report](https://hackerone.com/reports/864701)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [],
+          "CWE": [
+            "CWE-1321"
+          ]
+        },
+        "packageName": "lodash.set",
+        "proprietary": false,
+        "creationTime": "2021-07-19T12:00:32.890460Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2020-08-21T10:34:29Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2020-08-21T12:53:03Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-04-15T16:31:58.604260Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "grunt-replace-json@0.1.0",
+          "lodash.set@4.3.2"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "lodash.set",
+        "version": "4.3.2",
+        "severityWithCritical": "high"
+      },
+      {
+        "id": "SNYK-JS-MARSDB-480405",
+        "title": "Arbitrary Code Injection",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "credit": [
+          "Francois Gauthier"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "critical",
+        "cvssScore": 9.8,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "marsdb",
+        "references": [
+          {
+            "url": "https://www.npmjs.com/advisories/1122",
+            "title": "NPM Security Advisory"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "Snyk",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T13:59:19.608436Z"
+          }
+        ],
+        "description": "## Overview\n[marsdb](https://github.com/c58/marsdb) is a MarsDB is a lightweight client-side database.\n\nAffected versions of this package are vulnerable to Arbitrary Code Injection. In the `DocumentMatcher` class, selectors on `$where` clauses are passed to a Function constructor unsanitized. This allows attackers to run arbitrary commands in the system when the function is executed.\n## Remediation\nThere is no fixed version for `marsdb`.\n## References\n- [NPM Security Advisory](https://www.npmjs.com/advisories/1122)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [],
+          "CWE": [
+            "CWE-94"
+          ],
+          "NSP": [
+            "1122"
+          ],
+          "GHSA": [
+            "GHSA-5mrr-rgp6-x4gr"
+          ]
+        },
+        "packageName": "marsdb",
+        "proprietary": false,
+        "creationTime": "2019-11-06T09:43:57.923159Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2019-08-29T17:53:27Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2019-11-06T11:41:52Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-06T13:59:19.608436Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 98,
+        "from": [
+          "juice-shop@19.1.1",
+          "marsdb@0.6.11"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "marsdb",
+        "version": "0.6.11",
+        "severityWithCritical": "critical"
+      },
+      {
+        "id": "SNYK-JS-NOTEVIL-2385946",
+        "title": "Sandbox Bypass",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+        "credit": [
+          "Cristian-Alexandru Staicu",
+          "Abdullah Alhamdan"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.5,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "notevil",
+        "references": [],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+            "cvssV3BaseScore": 6.5,
+            "modificationTime": "2024-03-11T09:49:30.708028Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T14:01:18.159656Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+            "assigner": "NVD",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:49:30.708028Z"
+          }
+        ],
+        "description": "## Overview\n[notevil](https://www.npmjs.com/package/notevil) is a module uses esprima to parse the javascript AST then walks each node and evaluates the result\r\n**Note:**This package has been deprecated.\n\nAffected versions of this package are vulnerable to Sandbox Bypass. It is vulnerable to Sandbox Escape leading to Prototype pollution. The package fails to restrict access to the main context, allowing an attacker to add or modify an object's prototype.\r\n\r\n**Note:**  This vulnerability derives from an incomplete fix in [SNYK-JS-NOTEVIL-608878](https://security.snyk.io/vuln/SNYK-JS-NOTEVIL-608878).\r\n\r\n## PoC:\r\n```js\r\nvar safeEval = require('notevil')\r\n\r\nsafeEval(`  \r\nObject.defineProperty(({})[[\"__proto__\"]][[\"__proto__\"]], 'polluted', {\r\n  value: 'success'\r\n});`);\r\n\r\nconsole.log(polluted);\r\n```\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of \u201cpath\u201d, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype\u2014 use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Oliver. \u201cJavaScript prototype pollution attack in NodeJS application.\u201d GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `notevil`.\n",
+        "epssDetails": {
+          "percentile": "0.53277",
+          "probability": "0.00304",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2021-23771"
+          ],
+          "CWE": [
+            "CWE-1321",
+            "CWE-265"
+          ]
+        },
+        "packageName": "notevil",
+        "proprietary": true,
+        "creationTime": "2022-01-27T15:00:51.139678Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2022-01-27T15:00:48Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2022-02-14T16:21:53.819915Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:49:30.708028Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 98,
+        "from": [
+          "juice-shop@19.1.1",
+          "notevil@1.3.3"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "notevil",
+        "version": "1.3.3",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-SOCKETIOPARSER-5596892",
+        "title": "Denial of Service (DoS)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+        "credit": [
+          "rafax00"
+        ],
+        "semver": {
+          "vulnerable": [
+            ">=3.4.0 <3.4.3",
+            ">=4.0.0 <4.2.3"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "3.4.3",
+          "4.2.3"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 7.5,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "socket.io-parser",
+        "references": [
+          {
+            "url": "https://github.com/socketio/socket.io-parser/commit/2dc3c92622dad113b8676be06f23b1ed46b02ced",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/socketio/socket.io-parser/commit/3b78117bf6ba7e99d7a5cfc1ba54d0477554a7f3",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/socketio/socket.io-parser/releases/tag/3.4.3",
+            "title": "GitHub Release"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2024-03-11T09:53:18.116269Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T14:04:09.831372Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "NVD",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:18.116269Z"
+          }
+        ],
+        "description": "## Overview\n[socket.io-parser](https://www.npmjs.org/package/socket.io-parser) is a socket.io protocol parser\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) due to insufficient validation when decoding a packet. An attacker can send an event with a name like `'2[{\"toString\":\"foo\"}]'` to trigger an uncaught exception and a crash, like the below.\r\n\r\n```\r\nTypeError: Cannot convert object to primitive value\r\n       at Socket.emit (node:events:507:25)\r\n       at .../node_modules/socket.io/lib/socket.js:531:14\r\n```\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](https://security.snyk.io/vuln/SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `socket.io-parser` to version 3.4.3, 4.2.3 or higher.\n## References\n- [GitHub Commit](https://github.com/socketio/socket.io-parser/commit/2dc3c92622dad113b8676be06f23b1ed46b02ced)\n- [GitHub Commit](https://github.com/socketio/socket.io-parser/commit/3b78117bf6ba7e99d7a5cfc1ba54d0477554a7f3)\n- [GitHub Release](https://github.com/socketio/socket.io-parser/releases/tag/3.4.3)\n",
+        "epssDetails": {
+          "percentile": "0.37719",
+          "probability": "0.00162",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2023-32695"
+          ],
+          "CWE": [
+            "CWE-400"
+          ],
+          "GHSA": [
+            "GHSA-cqmj-92xf-r6r9"
+          ]
+        },
+        "packageName": "socket.io-parser",
+        "proprietary": false,
+        "creationTime": "2023-05-24T07:36:34.088298Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-05-23T19:55:13Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-05-24T07:39:19.358296Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:53:18.116269Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "socket.io@3.1.2",
+          "socket.io-parser@4.0.5"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "socket.io-parser",
+        "version": "4.0.5",
+        "severityWithCritical": "high"
+      },
+      {
+        "id": "SNYK-JS-TAR-6476909",
+        "title": "Uncontrolled Resource Consumption ('Resource Exhaustion')",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H/E:P",
+        "credit": [
+          "Mohamed Dief"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<6.2.1"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "6.2.1"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.5,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "tar",
+        "references": [
+          {
+            "url": "https://github.com/isaacs/node-tar/commit/fe8cd57da5686f8695415414bda49206a545f7f7",
+            "title": "GitHub Commit"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 6.5,
+            "modificationTime": "2024-06-20T13:34:25.566902Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-29T11:51:08.899351Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-06-20T13:34:25.566902Z"
+          }
+        ],
+        "description": "## Overview\n[tar](https://www.npmjs.com/package/tar) is a full-featured Tar for Node.js.\n\nAffected versions of this package are vulnerable to Uncontrolled Resource Consumption ('Resource Exhaustion') due to the lack of folders count validation during the folder creation process. An attacker who generates a large number of sub-folders can consume memory on the system running the software and even crash the client within few seconds of running it using a path with too many sub-folders inside.\n## Remediation\nUpgrade `tar` to version 6.2.1 or higher.\n## References\n- [GitHub Commit](https://github.com/isaacs/node-tar/commit/fe8cd57da5686f8695415414bda49206a545f7f7)\n",
+        "epssDetails": {
+          "percentile": "0.44450",
+          "probability": "0.00218",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2024-28863"
+          ],
+          "CWE": [
+            "CWE-400"
+          ],
+          "GHSA": [
+            "GHSA-f5x3-32g6-xq36"
+          ]
+        },
+        "packageName": "tar",
+        "proprietary": false,
+        "creationTime": "2024-03-22T12:56:33.802918Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2024-03-21T22:40:19Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2024-03-22T12:56:33.985087Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-06-20T13:34:25.566902Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "node-pre-gyp@0.15.0",
+          "tar@4.4.19"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "tar",
+        "version": "4.4.19",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-VM2-5537079",
+        "title": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N/E:P",
+        "credit": [
+          "Takeshi Kaneko"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<3.9.18"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "3.9.18"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 5.3,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "vm2",
+        "references": [
+          {
+            "url": "https://github.com/patriksimek/vm2/commit/5206ba25afd86ef547a2c9d48d46ca7a9e6ec238",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/patriksimek/vm2/releases/tag/3.9.18",
+            "title": "GitHub Release"
+          },
+          {
+            "url": "https://gist.github.com/arkark/c1c57eaf3e0a649af1a70c2b93b17550",
+            "title": "PoC"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "cvssV3BaseScore": 5.3,
+            "modificationTime": "2024-03-11T09:53:15.875083Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T13:56:59.541484Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "assigner": "NVD",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:15.875083Z"
+          }
+        ],
+        "description": "## Overview\n[vm2](https://github.com/patriksimek/vm2#readme) is a sandbox that can run untrusted code with whitelisted Node's built-in modules.\n\nAffected versions of this package are vulnerable to Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection') via the `inspect` method of `vm.js`, which allows `write` permissions. \r\nExploiting this vulnerability allows an attacker to edit options for the `console.log` command.\r\n\r\n## Workaround\r\nUsers unable to upgrade may make the `inspect` method `readonly` with `vm.readonly(inspect)` after creating a VM.\n## Remediation\nUpgrade `vm2` to version 3.9.18 or higher.\n## References\n- [GitHub Commit](https://github.com/patriksimek/vm2/commit/5206ba25afd86ef547a2c9d48d46ca7a9e6ec238)\n- [GitHub Release](https://github.com/patriksimek/vm2/releases/tag/3.9.18)\n- [PoC](https://gist.github.com/arkark/c1c57eaf3e0a649af1a70c2b93b17550)\n",
+        "epssDetails": {
+          "percentile": "0.65182",
+          "probability": "0.00500",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2023-32313"
+          ],
+          "CWE": [
+            "CWE-74"
+          ],
+          "GHSA": [
+            "GHSA-p5gc-c584-jj6v"
+          ]
+        },
+        "packageName": "vm2",
+        "proprietary": false,
+        "creationTime": "2023-05-16T08:07:30.028918Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-05-16T07:52:13Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-05-16T08:18:20.099998Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:53:15.875083Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "juicy-chat-bot@0.9.0",
+          "vm2@3.9.17"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "vm2",
+        "version": "3.9.17",
+        "severityWithCritical": "medium"
+      },
+      {
+        "id": "SNYK-JS-VM2-5537100",
+        "title": "Sandbox Bypass",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+        "credit": [
+          "Takeshi Kaneko"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<3.9.18"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "3.9.18"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "critical",
+        "cvssScore": 9.8,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "vm2",
+        "references": [
+          {
+            "url": "https://github.com/patriksimek/vm2/commit/d88105f99752305c5b8a77b63ddee3ec86912daf",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://gist.github.com/arkark/e9f5cf5782dec8321095be3e52acf5ac",
+            "title": "GitHub Gist"
+          },
+          {
+            "url": "https://github.com/patriksimek/vm2/releases/tag/3.9.18",
+            "title": "GitHub Release"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "cvssV3BaseScore": 10,
+            "modificationTime": "2024-03-11T09:53:15.879124Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+            "assigner": "Snyk",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-06T13:57:06.387100Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 10,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:15.879124Z"
+          }
+        ],
+        "description": "## Overview\n[vm2](https://github.com/patriksimek/vm2#readme) is a sandbox that can run untrusted code with whitelisted Node's built-in modules.\n\nAffected versions of this package are vulnerable to Sandbox Bypass by abusing an unexpected creation of a host object based on the maliciously crafted specification of `Proxy`.\r\nExploiting this vulnerability allows an attacker to gain remote code execution rights on the host running the sandbox via the `Function` constructor.\n## PoC\n```js\r\nconst { VM } = require(\"vm2\");\r\nconst vm = new VM();\r\n\r\nconst code = `\r\n  const err = new Error();\r\n  err.name = {\r\n    toString: new Proxy(() => \"\", {\r\n      apply(target, thiz, args) {\r\n        const process = args.constructor.constructor(\"return process\")();\r\n        throw process.mainModule.require(\"child_process\").execSync(\"echo hacked\").toString();\r\n      },\r\n    }),\r\n  };\r\n  try {\r\n    err.stack;\r\n  } catch (stdout) {\r\n    stdout;\r\n  }\r\n`;\r\n\r\nconsole.log(vm.run(code)); // -> hacked\r\n```\n## Remediation\nUpgrade `vm2` to version 3.9.18 or higher.\n## References\n- [GitHub Commit](https://github.com/patriksimek/vm2/commit/d88105f99752305c5b8a77b63ddee3ec86912daf)\n- [GitHub Gist](https://gist.github.com/arkark/e9f5cf5782dec8321095be3e52acf5ac)\n- [GitHub Release](https://github.com/patriksimek/vm2/releases/tag/3.9.18)\n",
+        "epssDetails": {
+          "percentile": "0.98642",
+          "probability": "0.71232",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2023-32314"
+          ],
+          "CWE": [
+            "CWE-265"
+          ],
+          "GHSA": [
+            "GHSA-whpj-8f3w-67p5"
+          ]
+        },
+        "packageName": "vm2",
+        "proprietary": false,
+        "creationTime": "2023-05-16T08:35:19.310061Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-05-15T20:50:51Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-05-16T10:07:04.650908Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-03-11T09:53:15.879124Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "juicy-chat-bot@0.9.0",
+          "vm2@3.9.17"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "vm2",
+        "version": "3.9.17",
+        "severityWithCritical": "critical"
+      },
+      {
+        "id": "SNYK-JS-VM2-5772823",
+        "title": "Remote Code Execution (RCE)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+        "credit": [
+          "SeungHyun Lee"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<3.10.0"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "3.10.0"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "critical",
+        "cvssScore": 9.8,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "vm2",
+        "references": [
+          {
+            "url": "https://github.com/patriksimek/vm2/commit/d9a1fde8ec5a5a9c9e5a69bf91d703950859d744",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/patriksimek/vm2/issues/533",
+            "title": "GitHub Issue"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "cvssV3BaseScore": 10,
+            "modificationTime": "2024-03-11T09:53:27.824223Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:P",
+            "assigner": "Snyk",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-10-26T15:58:16.850292Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 10,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:27.824223Z"
+          }
+        ],
+        "description": "## Overview\n[vm2](https://github.com/patriksimek/vm2#readme) is a sandbox that can run untrusted code with whitelisted Node's built-in modules.\n\nAffected versions of this package are vulnerable to Remote Code Execution (RCE) due to insufficient checks which allow an attacker to escape the sandbox.\r\n\r\n**Note:**\r\n\r\nAccording to the maintainer, the security issue cannot be properly addressed and the library will be discontinued.\n## Remediation\nUpgrade `vm2` to version 3.10.0 or higher.\n## References\n- [GitHub Commit](https://github.com/patriksimek/vm2/commit/d9a1fde8ec5a5a9c9e5a69bf91d703950859d744)\n- [GitHub Issue](https://github.com/patriksimek/vm2/issues/533)\n",
+        "epssDetails": {
+          "percentile": "0.96916",
+          "probability": "0.36095",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2023-37903"
+          ],
+          "CWE": [
+            "CWE-94"
+          ]
+        },
+        "packageName": "vm2",
+        "proprietary": false,
+        "creationTime": "2023-07-12T14:23:22.486382Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-07-12T14:10:56Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-07-12T14:50:43.988574Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2025-10-26T15:58:16.850292Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "juicy-chat-bot@0.9.0",
+          "vm2@3.9.17"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "vm2",
+        "version": "3.9.17",
+        "severityWithCritical": "critical"
+      },
+      {
+        "id": "SNYK-JS-VM2-5772825",
+        "title": "Remote Code Execution (RCE)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F",
+        "credit": [
+          "SeungHyun Lee"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<3.10.0"
+          ]
+        },
+        "exploit": "Functional",
+        "fixedIn": [
+          "3.10.0"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "critical",
+        "cvssScore": 9.8,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "vm2",
+        "references": [
+          {
+            "url": "https://github.com/patriksimek/vm2/commit/d9a1fde8ec5a5a9c9e5a69bf91d703950859d744",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/patriksimek/vm2/issues/533",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://www.exploit-db.com/exploits/51898",
+            "title": "Exploit DB"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "cvssV3BaseScore": 10,
+            "modificationTime": "2024-03-11T09:53:27.053027Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F",
+            "assigner": "Snyk",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2025-10-26T15:57:35.600084Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 10,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-03-11T09:53:27.053027Z"
+          }
+        ],
+        "description": "## Overview\n[vm2](https://github.com/patriksimek/vm2#readme) is a sandbox that can run untrusted code with whitelisted Node's built-in modules.\n\nAffected versions of this package are vulnerable to Remote Code Execution (RCE) such that the `Promise` handler sanitization can be bypassed, allowing attackers to escape the sandbox. \r\n\r\n**Note:**\r\n\r\nAccording to the maintainer, the security issue cannot be properly addressed and the library will be discontinued.\n## Remediation\nUpgrade `vm2` to version 3.10.0 or higher.\n## References\n- [GitHub Commit](https://github.com/patriksimek/vm2/commit/d9a1fde8ec5a5a9c9e5a69bf91d703950859d744)\n- [GitHub Issue](https://github.com/patriksimek/vm2/issues/533)\n- [Exploit DB](https://www.exploit-db.com/exploits/51898)\n",
+        "epssDetails": {
+          "percentile": "0.89855",
+          "probability": "0.05433",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2023-37466"
+          ],
+          "CWE": [
+            "CWE-94"
+          ],
+          "GHSA": [
+            "GHSA-4g2x-vq5p-5vj6",
+            "GHSA-cchq-frgv-rjh5"
+          ]
+        },
+        "packageName": "vm2",
+        "proprietary": false,
+        "creationTime": "2023-07-12T14:23:33.336819Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2023-07-12T14:20:17Z",
+        "exploitDetails": {
+          "sources": [
+            "ExploitDB",
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Functional",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2023-07-12T14:50:28.303109Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2025-10-26T15:57:35.600084Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 99,
+        "from": [
+          "juice-shop@19.1.1",
+          "juicy-chat-bot@0.9.0",
+          "vm2@3.9.17"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "vm2",
+        "version": "3.9.17",
+        "severityWithCritical": "critical"
+      },
+      {
+        "id": "SNYK-JS-WEB3-174533",
+        "title": "Insecure Credential Storage",
+        "CVSSv3": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N",
+        "credit": [
+          "sshelton76"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "low",
+        "cvssScore": 3.3,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "web3",
+        "references": [
+          {
+            "url": "https://github.com/ethereum/web3.js/issues/2739",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://github.com/web3/web3.js/issues/6913",
+            "title": "GitHub Issue"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N",
+            "assigner": "Snyk",
+            "severity": "low",
+            "baseScore": 3.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2024-11-07T13:05:02.752265Z"
+          }
+        ],
+        "description": "## Overview\n[web3](https://www.npmjs.com/package/web3) is a JavaScript API which connects to the Generic JSON RPC spec.\n\nAffected versions of this package are vulnerable to Insecure Credential Storage. The current implementation of web3.js could result in wallet decryption under certain circumstances. When a wallet is saved and encrypted into local storage, a private key is needed to load the wallet. However, this private key is available via LocalStorage and is readable in plaintext on a webpage after a wallet is loaded. \r\n\r\nThis implementation could be abused by an attacker through client-side attacks such as Cross-site Scripting (XSS) and could result in theft of a user's wallet private key.\n## Remediation\nThere is no fixed version for `web3`.\n## References\n- [GitHub Issue](https://github.com/ethereum/web3.js/issues/2739)\n- [GitHub Issue](https://github.com/web3/web3.js/issues/6913)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [],
+          "CWE": [
+            "CWE-256"
+          ],
+          "NSP": [
+            "877"
+          ],
+          "GHSA": [
+            "GHSA-27v7-qhfv-rqq8"
+          ]
+        },
+        "packageName": "web3",
+        "proprietary": false,
+        "creationTime": "2019-04-28T10:16:40.300717Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2019-04-26T08:48:18Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2019-04-28T12:03:31Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2024-11-07T13:05:02.752265Z",
+        "socialTrendAlert": false,
+        "packagePopularityRank": 98,
+        "from": [
+          "juice-shop@19.1.1",
+          "web3@4.16.0"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "web3",
+        "version": "4.16.0",
+        "severityWithCritical": "low"
+      }
+    ],
+    "upgrade": {
+      "check-dependencies@1.1.1": {
+        "upgradeTo": "check-dependencies@2.0.0",
+        "upgrades": [
+          "braces@2.3.2",
+          "micromatch@3.1.10",
+          "unset-value@1.0.0"
+        ],
+        "vulns": [
+          "SNYK-JS-BRACES-6838727",
+          "SNYK-JS-MICROMATCH-6838728",
+          "SNYK-JS-UNSETVALUE-2400660"
+        ]
+      },
+      "express-jwt@0.1.3": {
+        "upgradeTo": "express-jwt@7.7.8",
+        "upgrades": [
+          "jsonwebtoken@0.1.0",
+          "jsonwebtoken@0.1.0",
+          "jsonwebtoken@0.1.0",
+          "express-jwt@0.1.3",
+          "jsonwebtoken@0.1.0",
+          "moment@2.0.0",
+          "moment@2.0.0",
+          "moment@2.0.0",
+          "moment@2.0.0",
+          "base64url@0.0.6",
+          "jws@0.2.6"
+        ],
+        "vulns": [
+          "SNYK-JS-JSONWEBTOKEN-3180022",
+          "SNYK-JS-JSONWEBTOKEN-3180024",
+          "SNYK-JS-JSONWEBTOKEN-3180026",
+          "SNYK-JS-EXPRESSJWT-575022",
+          "npm:jsonwebtoken:20150331",
+          "SNYK-JS-MOMENT-2440688",
+          "npm:moment:20160126",
+          "npm:moment:20161019",
+          "npm:moment:20170905",
+          "npm:base64url:20180511",
+          "npm:jws:20160726"
+        ]
+      },
+      "i18n@0.11.1": {
+        "upgradeTo": "i18n@0.14.0",
+        "upgrades": [
+          "messageformat@2.3.0"
+        ],
+        "vulns": [
+          "SNYK-JS-MESSAGEFORMAT-13109646"
+        ]
+      },
+      "jsonwebtoken@0.4.0": {
+        "upgradeTo": "jsonwebtoken@9.0.0",
+        "upgrades": [
+          "jsonwebtoken@0.4.0",
+          "jsonwebtoken@0.4.0",
+          "jsonwebtoken@0.4.0",
+          "jsonwebtoken@0.4.0",
+          "base64url@0.0.6",
+          "jws@0.2.6"
+        ],
+        "vulns": [
+          "SNYK-JS-JSONWEBTOKEN-3180022",
+          "SNYK-JS-JSONWEBTOKEN-3180024",
+          "SNYK-JS-JSONWEBTOKEN-3180026",
+          "npm:jsonwebtoken:20150331",
+          "npm:base64url:20180511",
+          "npm:jws:20160726"
+        ]
+      },
+      "multer@1.4.5-lts.2": {
+        "upgradeTo": "multer@2.0.2",
+        "upgrades": [
+          "multer@1.4.5-lts.2",
+          "multer@1.4.5-lts.2",
+          "multer@1.4.5-lts.2",
+          "multer@1.4.5-lts.2"
+        ],
+        "vulns": [
+          "SNYK-JS-MULTER-10773732",
+          "SNYK-JS-MULTER-10299078",
+          "SNYK-JS-MULTER-10185673",
+          "SNYK-JS-MULTER-10185675"
+        ]
+      },
+      "pdfkit@0.11.0": {
+        "upgradeTo": "pdfkit@0.12.2",
+        "upgrades": [
+          "crypto-js@3.3.0"
+        ],
+        "vulns": [
+          "SNYK-JS-CRYPTOJS-6028119"
+        ]
+      },
+      "sanitize-html@1.4.2": {
+        "upgradeTo": "sanitize-html@2.12.1",
+        "upgrades": [
+          "sanitize-html@1.4.2",
+          "sanitize-html@1.4.2",
+          "sanitize-html@1.4.2",
+          "sanitize-html@1.4.2",
+          "sanitize-html@1.4.2",
+          "sanitize-html@1.4.2",
+          "lodash@2.4.2",
+          "lodash@2.4.2",
+          "lodash@2.4.2",
+          "lodash@2.4.2",
+          "lodash@2.4.2",
+          "lodash@2.4.2",
+          "lodash@2.4.2",
+          "lodash@2.4.2",
+          "sanitize-html@1.4.2",
+          "sanitize-html@1.4.2"
+        ],
+        "vulns": [
+          "SNYK-JS-SANITIZEHTML-6256334",
+          "SNYK-JS-SANITIZEHTML-2957526",
+          "SNYK-JS-SANITIZEHTML-1070780",
+          "SNYK-JS-SANITIZEHTML-1070786",
+          "SNYK-JS-SANITIZEHTML-585892",
+          "npm:sanitize-html:20161026",
+          "SNYK-JS-LODASH-1018905",
+          "SNYK-JS-LODASH-1040724",
+          "SNYK-JS-LODASH-450202",
+          "SNYK-JS-LODASH-608086",
+          "SNYK-JS-LODASH-6139239",
+          "SNYK-JS-LODASH-73638",
+          "SNYK-JS-LODASH-73639",
+          "npm:lodash:20180130",
+          "npm:sanitize-html:20141024",
+          "npm:sanitize-html:20160801"
+        ]
+      },
+      "socket.io@3.1.2": {
+        "upgradeTo": "socket.io@4.8.0",
+        "upgrades": [
+          "cookie@0.4.2",
+          "ws@7.4.6",
+          "socket.io@3.1.2",
+          "engine.io@4.1.2"
+        ],
+        "vulns": [
+          "SNYK-JS-COOKIE-8163060",
+          "SNYK-JS-WS-7266574",
+          "SNYK-JS-SOCKETIO-7278048",
+          "SNYK-JS-ENGINEIO-3136336"
+        ]
+      },
+      "unzipper@0.9.15": {
+        "upgradeTo": "unzipper@0.12.1",
+        "upgrades": [
+          "inflight@1.0.6"
+        ],
+        "vulns": [
+          "SNYK-JS-INFLIGHT-6095116"
+        ]
+      }
+    },
+    "patch": {},
+    "ignore": {},
+    "pin": {}
+  },
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 61,
+  "projectName": "juice-shop",
+  "foundProjectCount": 2,
+  "displayTargetFile": "package.json",
+  "hasUnknownVersions": false,
+  "path": "/Users/varunkaleeswaranbalasubramani/Documents/startup_fridr/poc_validator/scanner_data/juice-shop"
+}
